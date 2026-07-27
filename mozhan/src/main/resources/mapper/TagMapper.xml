@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.god.mz.mapper.TagMapper">
+
+    <select id="queryHotTagList" resultType="com.god.mz.domain.vo.tag.HotTagVO" parameterType="java.lang.Integer">
+        SELECT
+            t.id,
+            t.name,
+            COUNT(at.article_id) AS articleCount
+        FROM tag t
+                 LEFT JOIN article_tag at ON t.id = at.tag_id
+        GROUP BY t.id, t.name
+        ORDER BY articleCount DESC
+        LIMIT #{limit}
+    </select>
+    <select id="selectTagVOByArticleIds" resultType="com.god.mz.domain.vo.tag.TagVO">
+        SELECT
+        t.id,
+        t.name,
+        at.article_id AS articleId
+        FROM tag t
+        INNER JOIN article_tag at ON t.id = at.tag_id
+        WHERE at.article_id IN
+        <foreach collection="articleIds" item="articleId" open="(" separator="," close=")">
+            #{articleId}
+        </foreach>
+    </select>
+
+    <select id="selectAdminTagPage" resultType="com.god.mz.domain.vo.tag.AdminTagVO">
+        SELECT
+            t.id,
+            t.name,
+            t.create_by,
+            t.create_time,
+            COALESCE(article_count.article_count, 0) AS articleCount,
+            COALESCE(essay_count.essay_count, 0) AS essayCount
+        FROM tag t
+        LEFT JOIN (
+            SELECT tag_id, COUNT(*) AS article_count
+            FROM article_tag
+            GROUP BY tag_id
+        ) article_count ON t.id = article_count.tag_id
+        LEFT JOIN (
+            SELECT tag_id, COUNT(*) AS essay_count
+            FROM essay_tag
+            GROUP BY tag_id
+        ) essay_count ON t.id = essay_count.tag_id
+        <where>
+            <if test="name != null and name != ''">
+                AND t.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        ORDER BY t.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectAdminTagCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM tag t
+        <where>
+            <if test="name != null and name != ''">
+                AND t.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>

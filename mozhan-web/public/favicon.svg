@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+   <!-- 客栈屋檐 -->
+   <path d="M20 45 Q50 30 80 45 L75 50 Q50 38 25 50 Z" fill="#222" />
+   
+   <!-- 屋檐左右翘角 -->
+   <path d="M20 45 L16 40 L22 43 Z" fill="#222" />
+   <path d="M80 45 L84 40 L78 43 Z" fill="#222" />
+   
+   <!-- 门廊 -->
+   <rect x="42" y="50" width="16" height="22" fill="none" stroke="#222" stroke-width="1.5" />
+   
+   <!-- 门 -->
+   <line x1="50" y1="50" x2="50" y2="72" stroke="#222" stroke-width="1" />
+   
+   <!-- 灯笼 -->
+   <rect x="46" y="36" width="8" height="10" rx="1" fill="#222" />
+   <line x1="50" y1="34" x2="50" y2="36" stroke="#222" stroke-width="1" />
+   <line x1="50" y1="46" x2="50" y2="48" stroke="#222" stroke-width="1" />
+   
+   <!-- 两侧短柱 -->
+   <rect x="30" y="52" width="3" height="18" fill="#222" />
+   <rect x="67" y="52" width="3" height="18" fill="#222" />
+   
+   <!-- 门前短凳 -->
+   <rect x="38" y="74" width="24" height="2" fill="#222" />
+   
+   <!-- 淡墨地面 -->
+   <ellipse cx="50" cy="78" rx="28" ry="3" fill="#e8e8e8" opacity="0.4" />
+ </svg>

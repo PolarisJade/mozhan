@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.god.mz.mapper.UserFollowMapper">
+
+    <select id="selectFollowingList" resultType="com.god.mz.domain.po.UserFollow">
+        SELECT uf.*
+        FROM user_follow uf
+        WHERE uf.user_id = #{userId}
+        <if test="cursor != null">
+            AND uf.create_time &lt; (
+                SELECT create_time FROM user_follow WHERE id = #{cursor}
+            )
+        </if>
+        ORDER BY uf.create_time DESC
+        LIMIT #{pageSize}
+    </select>
+    <select id="selectFollowerList" resultType="com.god.mz.domain.po.UserFollow">
+        select uf.*
+        from user_follow uf
+        where uf.follow_id = #{followId}
+        <if test="cursor != null">
+            and uf.create_time &lt; (
+                select create_time from user_follow where id = #{cursor}
+            )
+        </if>
+        order by uf.create_time desc
+        limit #{pageSize}
+    </select>
+</mapper>

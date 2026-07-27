@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: mozhan
+  profiles:
+    active: local
+  datasource:
+      #核心链接配置
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/mo_zhan?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+
+    # HikariCP 连接池配置
+    hikari:
+      # 最小空闲连接数
+      minimum-idle: 5
+      # 最大连接池大小
+      maximum-pool-size: 20
+      # 连接超时时间（毫秒）
+      connection-timeout: 30000
+      # 空闲连接超时时间（毫秒），0表示永不超时
+      idle-timeout: 600000
+      # 连接最大生命周期（毫秒），建议比数据库 wait_timeout 小
+      max-lifetime: 1800000
+      # 连接池名称
+      pool-name: MozhanHikariCP
+      # 是否自动提交
+      auto-commit: true
+      # 泄漏检测阈值（毫秒），0表示禁用
+      leak-detection-threshold: 60000
+
+  #邮箱配置
+  mail:
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+
+jwt:
+  secret: ${jwt.secret}
+  expiration: 86400000
+  header: Authorization
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/*.xml
+  type-aliases-package: com.god.mz.domain.po
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 可选，用于查看 SQL 日志
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    enableSqlRunner: true
+    db-config:
+      update-strategy: not_null   #只更新非空字段
+
+# AES-256 key for diary content encryption (32 bytes, base64-encoded)
+diary:
+  aes-key: ${diary.aes-key}
+
+

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.god.mz.mapper.ArticleMapper">
+
+    <select id="selectArticleVOList" resultType="com.god.mz.domain.vo.article.ArticleVO">
+        SELECT
+        a.id,
+        a.title,
+        a.summary,
+        a.author_id AS authorId,
+        a.category_id AS categoryId,
+        a.is_top AS isTop,
+        a.status,
+        a.update_time AS updateTime,
+        c.name AS categoryName,
+        u.nickname AS authorName,
+        COALESCE(like_stats.like_count, 0) AS likeCount,
+        COALESCE(comment_stats.comment_count, 0) AS commentCount
+        FROM article a
+        LEFT JOIN category c ON a.category_id = c.id
+        LEFT JOIN users u ON a.author_id = u.id
+        LEFT JOIN (
+        SELECT article_id, COUNT(*) AS like_count
+        FROM article_like
+        GROUP BY article_id
+        ) like_stats ON a.id = like_stats.article_id
+        LEFT JOIN (
+        SELECT article_id, COUNT(*) AS comment_count
+        FROM comment
+        GROUP BY article_id
+        ) comment_stats ON a.id = comment_stats.article_id
+        WHERE a.id IN
+        <foreach collection="articleIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND a.del_flag = false
+    </select>
+    <select id="selectArticleDetail" resultType="com.god.mz.domain.vo.article.ArticleDetailVO">
+        SELECT
+            a.id,
+            a.title,
+            a.summary,
+            a.content,
+            a.author_id AS authorId,
+            a.category_id AS categoryId,
+            a.is_top AS isTop,
+            a.status,
+            a.update_time AS updateTime,
+            c.name AS categoryName,
+            u.nickname AS authorName,
+            COALESCE(like_stats.like_count, 0) AS likeCount,
+            COALESCE(comment_stats.comment_count, 0) AS commentCount
+        FROM article a
+                 LEFT JOIN category c ON a.category_id = c.id
+                 LEFT JOIN users u ON a.author_id = u.id
+                 LEFT JOIN (
+            SELECT article_id, COUNT(*) AS like_count
+            FROM article_like
+            GROUP BY article_id
+        ) like_stats ON a.id = like_stats.article_id
+                 LEFT JOIN (
+            SELECT article_id, COUNT(*) AS comment_count
+            FROM comment
+            GROUP BY article_id
+        ) comment_stats ON a.id = comment_stats.article_id
+        WHERE a.id = #{id}
+          AND a.del_flag = false
+    </select>
+    <select id="selectHotArticles" resultType="com.god.mz.domain.vo.article.HotArticleVO"
+            parameterType="java.lang.Integer">
+        SELECT a.id, a.title
+            FROM article a
+            LEFT JOIN (SELECT article_id, COUNT(*) AS like_cnt FROM article_like GROUP BY article_id) l ON a.id = l.article_id
+            LEFT JOIN (SELECT article_id, COUNT(*) AS comment_cnt FROM comment GROUP BY article_id) c ON a.id = c.article_id
+            WHERE a.del_flag = 0 AND a.status = 1
+            ORDER BY (COALESCE(l.like_cnt, 0) + COALESCE(c.comment_cnt, 0)) DESC
+            LIMIT #{limit}
+    </select>
+    <select id="selectUserArticleCounts" resultType="java.util.Map">
+        SELECT author_id AS authorId, COUNT(*) AS total
+        FROM article
+        WHERE del_flag = 0 AND author_id IN
+        <foreach collection="userIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY author_id
+    </select>
+</mapper>
