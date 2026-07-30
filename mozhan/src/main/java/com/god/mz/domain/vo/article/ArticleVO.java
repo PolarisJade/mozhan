@@ -22,6 +22,8 @@ public class ArticleVO {
 
     private String summary;
 
+    private String coverImage;
+
     private Long authorId;
 
     private String authorName;

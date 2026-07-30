@@ -563,9 +563,10 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* 细而半透明的常驻滚动条 */
+  /* 默认隐藏滚动条，滚动/悬停时显现 */
   scrollbar-width: thin;
-  scrollbar-color: rgba(26, 26, 26, 0.2) transparent;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.25s ease;
 }
 
 .messages-container::-webkit-scrollbar {
@@ -578,13 +579,29 @@ watch(
 }
 
 .messages-container::-webkit-scrollbar-thumb {
-  background: rgba(26, 26, 26, 0.2);
+  background: transparent;
   border-radius: 3px;
-  transition: background 0.2s ease;
+  transition: background 0.25s ease;
 }
 
-.messages-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 26, 26, 0.4);
+/* 悬停时显示滚动条 */
+.messages-container:hover,
+.messages-container:focus-within {
+  scrollbar-color: rgba(26, 26, 26, 0.2) transparent;
+}
+
+.messages-container:hover::-webkit-scrollbar-thumb,
+.messages-container:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 26, 0.2);
+}
+
+/* 滚动时显示滚动条（由 onMessagesScroll 控制 is-scrolling 类，600ms 后自动移除） */
+.messages-container.is-scrolling {
+  scrollbar-color: rgba(26, 26, 26, 0.2) transparent;
+}
+
+.messages-container.is-scrolling::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 26, 0.2);
 }
 
 .message-item {

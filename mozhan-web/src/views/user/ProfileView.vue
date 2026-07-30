@@ -107,10 +107,10 @@ async function loadArticles(status = '') {
   try {
     const query = {}
     if (status && status !== 'all') {
-      query.status = status.toUpperCase()
+      query.status = status === 'published' ? '发布' : '草稿'
     }
-    const data = await getMyArticleList(query, userStore.user?.id)
-    articles.value = data.list || []
+    const data = await getMyArticleList(query)
+    articles.value = data.records || []
   } finally {
     articlesLoading.value = false
   }
@@ -133,7 +133,7 @@ async function loadComments() {
   commentsLoading.value = true
   try {
     const data = await getMyComments({ pageSize: 50 })
-    comments.value = data.list || []
+    comments.value = data.records || []
   } finally {
     commentsLoading.value = false
   }

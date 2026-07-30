@@ -7,6 +7,7 @@
         a.id,
         a.title,
         a.summary,
+        a.cover_image AS coverImage,
         a.author_id AS authorId,
         a.category_id AS categoryId,
         a.is_top AS isTop,
@@ -48,6 +49,7 @@
             a.update_time AS updateTime,
             c.name AS categoryName,
             u.nickname AS authorName,
+            u.avatar AS authorAvatar,
             COALESCE(like_stats.like_count, 0) AS likeCount,
             COALESCE(comment_stats.comment_count, 0) AS commentCount
         FROM article a

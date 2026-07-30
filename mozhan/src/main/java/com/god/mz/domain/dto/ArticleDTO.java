@@ -13,6 +13,7 @@ import java.util.List;
 public class ArticleDTO {
     private String title;
     private String summary;
+    private String coverImage;
     private String content;
     private Long categoryId;
     private List<Long> tagIds;

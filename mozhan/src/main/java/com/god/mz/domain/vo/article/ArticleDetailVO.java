@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ArticleDetailVO extends ArticleVO{
+    private String authorAvatar;
     private String content;
     private Boolean isAuthor;
     private Boolean isFollowed;

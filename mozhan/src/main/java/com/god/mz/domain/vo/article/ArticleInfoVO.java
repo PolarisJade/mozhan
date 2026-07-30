@@ -14,6 +14,7 @@ public class ArticleInfoVO {
     private Long id;
     private String title;
     private String summary;
+    private String coverImage;
     private String content;
     private Long categoryId;
     private String categoryName;

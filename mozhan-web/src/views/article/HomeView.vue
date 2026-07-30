@@ -281,7 +281,6 @@ watch(() => route.query.keyword, (newKeyword) => {
             </button>
           </div>
         </div>
-        <h2 class="ink-page-title">文章列表</h2>
         </div>
       </div>
 
@@ -318,27 +317,38 @@ watch(() => route.query.keyword, (newKeyword) => {
             class="article-card ink-card"
             @click="goDetail(item.id)"
           >
-            <div class="article-header">
-              <h3>{{ item.title }}</h3>
-              <el-tag v-if="item.isTop" type="warning" size="small">置顶</el-tag>
+            <div class="article-main">
+              <div class="article-header">
+                <h3>{{ item.title }}</h3>
+                <el-tag v-if="item.isTop" type="warning" size="small">置顶</el-tag>
+              </div>
+              <p class="summary">{{ item.summary || '暂无摘要' }}</p>
+              <div class="meta ink-meta">
+                <span>{{ item.authorName }}</span>
+                <span v-if="item.categoryName"> · {{ item.categoryName }}</span>
+                <span class="meta-icon">
+                  <svg class="icon-like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M6 18c-2 0-4-1.5-4-4v-5c0-1.5 1-3 3-3h6l2 5h4c2 0 3 1.5 3 3v2c0 1.5-1.5 3-3 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 12l2 3 4-5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>{{ item.likeCount ?? 0 }}</span>
+                </span>
+                <span class="meta-icon">
+                  <svg class="icon-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>{{ item.commentCount ?? 0 }}</span>
+                </span>
+              </div>
             </div>
-            <p class="summary">{{ item.summary || '暂无摘要' }}</p>
-            <div class="meta ink-meta">
-              <span>{{ item.authorName }}</span>
-              <span v-if="item.categoryName"> · {{ item.categoryName }}</span>
-              <span class="meta-icon">
-                <svg class="icon-like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M6 18c-2 0-4-1.5-4-4v-5c0-1.5 1-3 3-3h6l2 5h4c2 0 3 1.5 3 3v2c0 1.5-1.5 3-3 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M9 12l2 3 4-5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>{{ item.likeCount ?? 0 }}</span>
-              </span>
-              <span class="meta-icon">
-                <svg class="icon-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>{{ item.commentCount ?? 0 }}</span>
-              </span>
+            <div v-if="item.coverImage" class="article-cover">
+              <img
+                :src="item.coverImage"
+                :alt="item.title"
+                class="cover-img"
+                loading="lazy"
+                @error="(e) => (e.target.style.display = 'none')"
+              />
             </div>
           </article>
         </div>
@@ -381,27 +391,38 @@ watch(() => route.query.keyword, (newKeyword) => {
             class="article-card ink-card"
             @click="goDetail(item.id)"
           >
-            <div class="article-header">
-              <h3>{{ item.title }}</h3>
-              <el-tag v-if="item.isTop" type="warning" size="small">置顶</el-tag>
+            <div class="article-main">
+              <div class="article-header">
+                <h3>{{ item.title }}</h3>
+                <el-tag v-if="item.isTop" type="warning" size="small">置顶</el-tag>
+              </div>
+              <p class="summary">{{ item.summary || '暂无摘要' }}</p>
+              <div class="meta ink-meta">
+                <span>{{ item.authorName }}</span>
+                <span v-if="item.categoryName"> · {{ item.categoryName }}</span>
+                <span class="meta-icon">
+                  <svg class="icon-like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M6 18c-2 0-4-1.5-4-4v-5c0-1.5 1-3 3-3h6l2 5h4c2 0 3 1.5 3 3v2c0 1.5-1.5 3-3 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 12l2 3 4-5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>{{ item.likeCount ?? 0 }}</span>
+                </span>
+                <span class="meta-icon">
+                  <svg class="icon-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>{{ item.commentCount ?? 0 }}</span>
+                </span>
+              </div>
             </div>
-            <p class="summary">{{ item.summary || '暂无摘要' }}</p>
-            <div class="meta ink-meta">
-              <span>{{ item.authorName }}</span>
-              <span v-if="item.categoryName"> · {{ item.categoryName }}</span>
-              <span class="meta-icon">
-                <svg class="icon-like" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M6 18c-2 0-4-1.5-4-4v-5c0-1.5 1-3 3-3h6l2 5h4c2 0 3 1.5 3 3v2c0 1.5-1.5 3-3 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M9 12l2 3 4-5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>{{ item.likeCount ?? 0 }}</span>
-              </span>
-              <span class="meta-icon">
-                <svg class="icon-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span>{{ item.commentCount ?? 0 }}</span>
-              </span>
+            <div v-if="item.coverImage" class="article-cover">
+              <img
+                :src="item.coverImage"
+                :alt="item.title"
+                class="cover-img"
+                loading="lazy"
+                @error="(e) => (e.target.style.display = 'none')"
+              />
             </div>
           </article>
         </div>
@@ -483,7 +504,7 @@ watch(() => route.query.keyword, (newKeyword) => {
 
 .fixed-header {
   position: fixed;
-  top: 95px;
+  top: 98px;
   left: 50%;
   transform: translateX(calc(-50% - 157px));
   max-width: 860px;
@@ -495,7 +516,7 @@ watch(() => route.query.keyword, (newKeyword) => {
 
 .header-cover {
   position: fixed;
-  top: 68px;
+  top: 70px;
   left: 50%;
   transform: translateX(calc(-50% - 157px));
   width: calc(100% - 30px);
@@ -508,7 +529,7 @@ watch(() => route.query.keyword, (newKeyword) => {
 .category-nav-wrapper {
   padding: 0;
   margin-bottom: 12px;
-  margin-top: -8px;
+  margin-top: -10px;
 }
 
 .category-nav {
@@ -642,10 +663,18 @@ watch(() => route.query.keyword, (newKeyword) => {
 .article-list {
   display: flex;
   flex-direction: column;
-  padding-top: 130px;
+  padding-top: 70px;
   background: #fff;
   border-radius: 12px;
   overflow: hidden;
+}
+
+.article-list > .article-card:first-child {
+  border-top: none;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: #fff;
+  box-shadow: none;
 }
 
 .search-results .article-list {
@@ -654,8 +683,9 @@ watch(() => route.query.keyword, (newKeyword) => {
 
 .article-card {
   display: flex;
-  flex-direction: column;
-  padding: 20px 24px;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 24px;
   cursor: pointer;
   transition: all 0.2s ease;
   border-bottom: 1px solid #f0f0f0;
@@ -678,11 +708,41 @@ watch(() => route.query.keyword, (newKeyword) => {
 }
 
 .article-card:hover {
-  transform: translateY(-2px);
+  background-color: #fafafa;
 }
 
 .article-card:hover::before {
   background: #1a1a1a;
+}
+
+/* 文字主区 */
+.article-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 右侧封面（仅 coverImage 不为 null 时渲染） */
+.article-cover {
+  flex-shrink: 0;
+  width: 120px;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.article-card:hover .cover-img {
+  transform: scale(1.04);
 }
 
 .article-header {
@@ -699,6 +759,9 @@ watch(() => route.query.keyword, (newKeyword) => {
   margin: 0;
   flex: 1;
   line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .summary {
@@ -791,13 +854,6 @@ watch(() => route.query.keyword, (newKeyword) => {
 .empty-result {
   padding: 40px;
   text-align: center;
-}
-
-.ink-page-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0 0 5px 0;
 }
 
 .load-more {

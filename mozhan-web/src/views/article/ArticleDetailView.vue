@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { onMounted, ref, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getArticleDetail, likeArticle } from '@/api/article'
@@ -270,9 +270,25 @@ watch(articleContent, () => {
     <div v-else-if="article" class="detail-layout">
       <article class="detail-card ink-card">
         <h1 class="title font-display">{{ article.title }}</h1>
-        
+
         <div class="author-info">
-          <span class="author-name" @click="goToAuthorProfile">{{ article.authorName }}</span>
+          <div class="author-left" @click="goToAuthorProfile">
+            <el-avatar
+              v-if="article.authorAvatar"
+              :size="40"
+              :src="article.authorAvatar"
+              class="author-avatar"
+            >
+              {{ article.authorName?.[0] }}
+            </el-avatar>
+            <div v-else class="author-avatar author-avatar--placeholder">
+              {{ article.authorName?.[0] }}
+            </div>
+            <div class="author-text">
+              <span class="author-name">{{ article.authorName }}</span>
+              <span class="author-tip">查看作者主页</span>
+            </div>
+          </div>
           <button
             v-if="showFollowButton()"
             class="follow-btn"
@@ -475,15 +491,60 @@ watch(articleContent, () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: rgba(255, 252, 247, 0.6);
+  border: 1px solid rgba(26, 26, 26, 0.08);
+  border-radius: 6px;
+}
+
+.author-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.author-left:hover {
+  opacity: 0.75;
+}
+
+.author-avatar {
+  flex-shrink: 0;
+  border: 1px solid rgba(26, 26, 26, 0.08);
+}
+
+.author-avatar--placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0ebe3 0%, #e8e0d0 100%);
+  color: rgba(26, 26, 26, 0.55);
+  font-size: 17px;
+  font-family: 'Ma Shan Zheng', 'Noto Serif SC', serif;
+}
+
+.author-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .author-name {
   font-size: 15px;
-  color: var(--ink-light);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  color: var(--ink);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.author-tip {
+  font-size: 12px;
+  color: var(--ink-muted);
+  letter-spacing: 0.05em;
 }
 
 .follow-btn {

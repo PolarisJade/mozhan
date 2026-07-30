@@ -221,11 +221,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public PageQueryVO<ArticleVO> listMyArticle(ArticlePageQuery query) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            throw new BizException(BizCodeEnum.USER_NOT_AUTH);
+        }
+
         Page<Article> page = new Page<>(query.getPageNum(), query.getPageSize());
 
         QueryWrapper<Article> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("del_flag", false)
-                .eq("author_id", query.getAuthorId());
+                .eq("author_id", userId);
 
         if (query.getStatus() != null) {
             queryWrapper.eq("status", query.getStatus());
