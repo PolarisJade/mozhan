@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { onMounted, ref, reactive, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { InkMessage } from '@/utils/message'
@@ -6,6 +6,7 @@ import 'vditor/dist/index.css'
 import { createArticle, updateArticle, getArticleDetail, getArticleInfo, publishArticle } from '@/api/article'
 import { getCategoryList } from '@/api/category'
 import { getTagList, createTag } from '@/api/tag'
+import { uploadImage } from '@/api/upload'
 import { useUserStore } from '@/stores/user'
 import { redirectToLogin } from '@/utils/auth'
 
@@ -19,6 +20,7 @@ const submitting = ref(false)
 const categories = ref([])
 const tags = ref([])
 const editorRef = ref(null)
+const imageInput = ref(null)
 let vditor = null
 
 const form = reactive({
@@ -145,8 +147,21 @@ function handleKeyDown(e) {
 }
 
 function handlePaste(e) {
+  // 优先检测剪贴板中的图片
+  const items = e.clipboardData?.items
+  if (items) {
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) uploadAndInsertImage(file)
+        return
+      }
+    }
+  }
+
   e.preventDefault()
-  
+
   let text = e.clipboardData.getData('text/html') || e.clipboardData.getData('text/plain')
   
   if (text) {
@@ -177,6 +192,61 @@ function handlePaste(e) {
   }
 }
 
+// ===== 图片上传相关 =====
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024
+
+function validateImageFile(file) {
+  if (!file) return false
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    InkMessage.error('仅支持 jpg/jpeg/png/gif 格式图片')
+    return false
+  }
+  if (file.size > MAX_IMAGE_SIZE) {
+    InkMessage.error('图片大小不能超过 5MB')
+    return false
+  }
+  return true
+}
+
+async function uploadAndInsertImage(file) {
+  if (!validateImageFile(file)) return
+  const hide = InkMessage.loading('图片上传中...', 0)
+  try {
+    const data = await uploadImage(file)
+    const imgHtml = `<img src="${data.url}" alt="${data.fileName || ''}" />`
+    const editor = document.querySelector('.rich-editor')
+    if (editor) {
+      editor.focus()
+      document.execCommand('insertHTML', false, imgHtml)
+    }
+    InkMessage.success('图片上传成功')
+  } catch (e) {
+    console.error('图片上传失败', e)
+  } finally {
+    hide?.()
+  }
+}
+
+function triggerImageSelect() {
+  if (imageInput.value) {
+    imageInput.value.value = ''
+    imageInput.value.click()
+  }
+}
+
+function handleImageSelect(e) {
+  const file = e.target.files?.[0]
+  if (file) uploadAndInsertImage(file)
+}
+
+function handleEditorDrop(e) {
+  const files = e.dataTransfer?.files
+  if (!files || files.length === 0) return
+  const file = Array.from(files).find(f => f.type.startsWith('image/'))
+  if (file) uploadAndInsertImage(file)
+}
+
 const toolbarButtons = [
   { label: 'H1', action: () => execCommand('formatBlock', 'h1') },
   { label: 'H2', action: () => execCommand('formatBlock', 'h2') },
@@ -192,6 +262,7 @@ const toolbarButtons = [
   { label: '左对齐', action: () => execCommand('justifyLeft') },
   { label: '居中', action: () => execCommand('justifyCenter') },
   { label: '右对齐', action: () => execCommand('justifyRight') },
+  { label: '图片', action: triggerImageSelect },
 ]
 
 async function handleSubmit(publish = false) {
@@ -372,7 +443,17 @@ onMounted(() => {
       @blur="saveSelection"
       @paste="handlePaste"
       @keydown="handleKeyDown"
+      @dragover.prevent
+      @drop.prevent="handleEditorDrop"
     ></div>
+
+    <input
+      ref="imageInput"
+      type="file"
+      accept="image/jpeg,image/png,image/gif"
+      hidden
+      @change="handleImageSelect"
+    />
   </div>
 </template>
 
@@ -567,5 +648,13 @@ onMounted(() => {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(26, 26, 26, 0.2), transparent);
   margin: 32px 0;
+}
+
+.rich-editor :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 12px 0;
+  display: block;
 }
 </style>

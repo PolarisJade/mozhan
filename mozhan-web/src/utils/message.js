@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 统一导出层
  * - InkMessage: Ant Design Vue 的 message 静态 API（独立引用，体积可控）
  *   命名上叫 InkMessage 是为了避免和 Element Plus 的 ElMessage 混淆。
@@ -33,6 +33,7 @@ const InkMessage = {
   error: (content, options) => AntdMessage.error(toOptions(content, options)),
   warning: (content, options) => AntdMessage.warning(toOptions(content, options)),
   info: (content, options) => AntdMessage.info(toOptions(content, options)),
+  loading: (content, duration = 3, onClose) => AntdMessage.loading(content, duration, onClose),
   open: (options) => AntdMessage.open({ duration: 3, ...options }),
   config: (options) => AntdMessage.config(options),
   close: (key) => AntdMessage.destroy(key),

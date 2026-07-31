@@ -275,7 +275,7 @@ watch(totalPages, async () => {
               <span>{{ detail.weather || '未记天气' }}</span>
             </span>
           </div>
-          <div class="detail-content">{{ detail.content }}</div>
+          <div class="detail-content" v-html="detail.content"></div>
         </article>
       </section>
     </div>
@@ -519,9 +519,19 @@ watch(totalPages, async () => {
   font-size: 15px;
   line-height: 2;
   color: var(--ink);
-  white-space: pre-wrap;
   word-break: break-word;
   letter-spacing: 0.02em;
+}
+.detail-content :deep(p) {
+  margin: 0 0 0.6em;
+  line-height: 1.8;
+}
+.detail-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 12px 0;
+  display: block;
 }
 /* 浮动按钮 */
 .floating-write {
