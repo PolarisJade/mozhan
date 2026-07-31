@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<script setup>
+﻿<script setup>
 import { onMounted, ref, reactive, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { InkMessage } from '@/utils/message'
