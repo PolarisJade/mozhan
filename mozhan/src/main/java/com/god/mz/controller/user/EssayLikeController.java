@@ -5,14 +5,14 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * <p>
- * 文章点赞记录表 前端控制器
+ * 随笔点赞记录表 前端控制器
  * </p>
  *
  * @author God
- * @since 2026-05-09
+ * @since 2026-08-02
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/article/like")
-public class ArticleLikeController {
+@RequestMapping("/essay-like")
+public class EssayLikeController {
 }

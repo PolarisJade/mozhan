@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿<script setup>
+﻿﻿﻿﻿<script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { InkMessage, InkMessageBox } from '@/utils/message'
@@ -793,8 +793,8 @@ onMounted(loadProfile)
 }
 
 .article-header h3 {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 700;
   color: #1a1a1a;
   margin: 0;
   flex: 1;

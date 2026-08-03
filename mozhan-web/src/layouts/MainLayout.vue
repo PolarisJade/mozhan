@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed, h, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -290,7 +290,7 @@ function goChat() {
   position: relative;
   color: var(--ink-muted);
   text-decoration: none;
-  font-size: 15px;
+  font-size: 18px;
   letter-spacing: 0.05em;
   padding: 8px 0;
   border-radius: 0;
@@ -331,7 +331,7 @@ function goChat() {
 .nav a {
   color: var(--ink-muted);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 20px;
   letter-spacing: 0.1em;
   transition: color 0.3s;
 }
@@ -404,7 +404,7 @@ function goChat() {
   border: none;
   cursor: pointer;
   text-align: left;
-  font-size: 13px;
+  font-size: 16px;
   color: var(--ink-light);
   transition: background-color 0.2s;
   display: block;
@@ -420,14 +420,14 @@ function goChat() {
 }
 
 .user-name {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-light);
   letter-spacing: 0.05em;
 }
 
 .nav-link {
   color: var(--ink-light) !important;
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: 0.05em;
 }
 
@@ -438,7 +438,7 @@ function goChat() {
 .header-btn {
   height: 32px;
   padding: 0 16px;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 0.1em;
 }
 
@@ -452,7 +452,7 @@ function goChat() {
   border-radius: 0;
   color: var(--ink-light);
   font-family: 'Noto Serif SC', 'ZCOOL XiaoWei', serif;
-  font-size: 14px;
+  font-size: 15px;
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -621,7 +621,7 @@ function goChat() {
   background: transparent;
   border: none;
   outline: none;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink);
   font-family: 'Noto Serif SC', 'ZCOOL XiaoWei', serif;
   letter-spacing: 0.03em;

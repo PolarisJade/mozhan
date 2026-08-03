@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.god.mz.common.enums.ArticleStatusEnum;
 import com.god.mz.common.enums.BizCodeEnum;
 import com.god.mz.common.constant.RedisConstant;
+import com.god.mz.common.enums.LikeTypeEnum;
 import com.god.mz.domain.dto.ArticleDTO;
 import com.god.mz.domain.po.*;
 import com.god.mz.domain.query.PageQuery.ArticlePageQuery;
@@ -24,16 +25,16 @@ import com.god.mz.exception.BizException;
 import com.god.mz.mapper.*;
 import com.god.mz.service.IArticleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.god.mz.service.ILikeService;
 import com.god.mz.util.ArticleVOBuilder;
 import com.god.mz.util.UserContext;
-import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -46,29 +47,20 @@ import java.util.stream.Collectors;
  * @since 2026-05-09
  */
 @Service
+@RequiredArgsConstructor
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements IArticleService {
-    @Resource
-    private ArticleTagMapper articleTagMapper;
-    @Resource
-    private CategoryMapper categoryMapper;
-    @Resource
-    private ArticleMapper articleMapper;
-    @Resource
-    private CommentMapper commentMapper;
-    @Resource
-    private UserFollowMapper userFollowMapper;
-    @Resource
-    private ArticleLikeMapper articleLikeMapper;
-    @Resource
-    private UserMapper userMapper;
-    @Resource
-    private TagMapper tagMapper;
-    @Resource
-    private ArticleVOBuilder articleVOBuilder;
-    @Resource
-    private StringRedisTemplate stringRedisTemplate;
-    @Resource
-    private ObjectMapper objectMapper;
+
+    private final ArticleTagMapper articleTagMapper;
+    private final CategoryMapper categoryMapper;
+    private final ArticleMapper articleMapper;
+    private final CommentMapper commentMapper;
+    private final UserFollowMapper userFollowMapper;
+    private final UserMapper userMapper;
+    private final TagMapper tagMapper;
+    private final ArticleVOBuilder articleVOBuilder;
+    private final StringRedisTemplate stringRedisTemplate;
+    private final ObjectMapper objectMapper;
+    private final ILikeService likeService;
 
     @Override
     @Transactional
@@ -180,22 +172,26 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             throw new BizException(BizCodeEnum.DATA_NOT_EXIST);
         }
 
+        //从redis中获取点赞数
+        Double count = stringRedisTemplate.opsForZSet().score(RedisConstant.ARTICLE_LIKE_COUNT_KEY, id.toString());
+        if (count == null) {
+            count = 0D;
+        }
+        vo.setLikeCount(count.longValue());
+
         List<TagVO> tagVOList = tagMapper.selectTagVOByArticleIds(Collections.singletonList(id));
         vo.setTags(tagVOList != null ? tagVOList : new ArrayList<>());
 
         Long userId = UserContext.getUserId();
+        // 判断是否点过赞
+        vo.setIsLike(likeService.isLiked(LikeTypeEnum.article, id));
         if (userId != null) {
             vo.setIsAuthor(userId.equals(vo.getAuthorId()));
             vo.setIsFollowed(userFollowMapper.exists(new QueryWrapper<UserFollow>()
                     .eq("user_id", userId)
                     .eq("follow_id", vo.getAuthorId())));
-
-            vo.setIsLike(articleLikeMapper.exists(new QueryWrapper<ArticleLike>()
-                    .eq("user_id", userId)
-                    .eq("article_id", id)));
         } else {
             vo.setIsAuthor(false);
-            vo.setIsLike(false);
             vo.setIsFollowed(false);
         }
         return vo;
@@ -316,6 +312,26 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return new PageQueryVO<>(pageList, (long) total, (long) pageSize, (long) pageNum, (long) totalPages);
     }
 
+    @Override
+    @Transactional
+    public void updateLikeCount(int maxSize) {
+        String key = LikeTypeEnum.article.getCountKey();
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet().popMin(key, maxSize);
+        if (typedTuples == null) return;
+
+        List<Article> list = new ArrayList<>(typedTuples.size());
+        for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
+            String targetId = tuple.getValue();
+            Double count = tuple.getScore();
+            if (targetId == null || count == null) continue;
+            Article article = new Article();
+            article.setId(Long.parseLong(targetId));
+            article.setLikeCount(count.longValue());
+            list.add(article);
+        }
+        updateBatchById(list);
+    }
+
     private List<HotArticleVO> loadHotArticlesFromDb(Integer limit) {
         List<HotArticleVO> list = articleMapper.selectHotArticles(limit);
         try {
@@ -368,11 +384,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         } else {
             articleVO.setTags(new ArrayList<>());
         }
-
-        //获得点赞数
-        Long likeCount = articleLikeMapper.selectCount(new QueryWrapper<ArticleLike>()
-                .eq("article_id", article.getId()));
-        articleVO.setLikeCount(Math.toIntExact(likeCount));
 
         //获得评论数
         Long commentCount = commentMapper.selectCount(new QueryWrapper<Comment>()

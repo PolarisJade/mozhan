@@ -20,10 +20,6 @@ export function getArticleInfo(id) {
   return request.get(`/article/info/${id}`)
 }
 
-export function likeArticle(id) {
-  return request.post(`/article/like/id`, null, { params: { articleId: id } })
-}
-
 export function createArticle(data) {
   return request.post('/article', data)
 }

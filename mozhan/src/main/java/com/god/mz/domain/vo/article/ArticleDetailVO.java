@@ -14,5 +14,4 @@ public class ArticleDetailVO extends ArticleVO{
     private String content;
     private Boolean isAuthor;
     private Boolean isFollowed;
-    private Boolean isLike;
 }

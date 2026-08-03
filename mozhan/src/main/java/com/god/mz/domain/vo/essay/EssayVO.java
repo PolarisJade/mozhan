@@ -18,5 +18,7 @@ public class EssayVO {
     private String avatar;
     private String content;
     private List<TagVO> tagVOList;
+    private Boolean isLike;
+    private Long likeCount;
     private LocalDateTime createTime;
 }

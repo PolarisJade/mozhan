@@ -76,6 +76,11 @@ public class Article implements Serializable {
     private ArticleStatusEnum status;
 
     /**
+     * 点赞数
+     */
+    private Long LikeCount;
+
+    /**
      * 删除标志：0未删除，1已删除
      */
     private Boolean delFlag;

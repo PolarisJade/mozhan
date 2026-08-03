@@ -12,19 +12,14 @@
         a.category_id AS categoryId,
         a.is_top AS isTop,
         a.status,
+        a.like_count AS likeCount,
         a.update_time AS updateTime,
         c.name AS categoryName,
         u.nickname AS authorName,
-        COALESCE(like_stats.like_count, 0) AS likeCount,
         COALESCE(comment_stats.comment_count, 0) AS commentCount
         FROM article a
         LEFT JOIN category c ON a.category_id = c.id
         LEFT JOIN users u ON a.author_id = u.id
-        LEFT JOIN (
-        SELECT article_id, COUNT(*) AS like_count
-        FROM article_like
-        GROUP BY article_id
-        ) like_stats ON a.id = like_stats.article_id
         LEFT JOIN (
         SELECT article_id, COUNT(*) AS comment_count
         FROM comment
@@ -50,16 +45,10 @@
             c.name AS categoryName,
             u.nickname AS authorName,
             u.avatar AS authorAvatar,
-            COALESCE(like_stats.like_count, 0) AS likeCount,
             COALESCE(comment_stats.comment_count, 0) AS commentCount
         FROM article a
                  LEFT JOIN category c ON a.category_id = c.id
                  LEFT JOIN users u ON a.author_id = u.id
-                 LEFT JOIN (
-            SELECT article_id, COUNT(*) AS like_count
-            FROM article_like
-            GROUP BY article_id
-        ) like_stats ON a.id = like_stats.article_id
                  LEFT JOIN (
             SELECT article_id, COUNT(*) AS comment_count
             FROM comment

@@ -39,4 +39,6 @@ public interface IArticleService extends IService<Article> {
     ArticleInfoVO getArticleInfoById(Long id);
 
     PageQueryVO<HotArticleVO> getHotArticle(ArticlePageQuery query);
+
+    void updateLikeCount(int maxSize);
 }

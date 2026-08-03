@@ -1,7 +1,8 @@
 <script setup>
 import { onMounted, ref, watch, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getArticleDetail, likeArticle } from '@/api/article'
+import { getArticleDetail } from '@/api/article'
+import { likeArticle, unlikeArticle } from '@/api/like'
 import { followUser, unfollowUser } from '@/api/user'
 import { getCommentsByArticle, createComment } from '@/api/comment'
 import { useUserStore } from '@/stores/user'
@@ -91,8 +92,54 @@ async function loadDetail() {
     loading.value = false
     setTimeout(() => {
       extractToc()
+      setupCodeBlocks()
     }, 50)
   }
+}
+
+function setupCodeBlocks() {
+  const content = document.querySelector('.content')
+  if (!content) return
+  const pres = content.querySelectorAll('pre')
+  pres.forEach(pre => {
+    // 检查是否已有 wrapper
+    if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrapper')) return
+
+    const code = pre.querySelector('code')
+    const lang = code && code.className ? code.className.replace('language-', '').replace('hljs language-', '') : 'text'
+
+    const wrapper = document.createElement('div')
+    wrapper.className = 'code-block-wrapper'
+
+    const header = document.createElement('div')
+    header.className = 'code-block-header'
+
+    const langSpan = document.createElement('span')
+    langSpan.className = 'code-block-lang'
+    langSpan.textContent = lang || 'text'
+
+    const copyBtn = document.createElement('button')
+    copyBtn.className = 'code-block-copy'
+    copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span>'
+    copyBtn.addEventListener('click', () => {
+      const text = pre.textContent
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.querySelector('span').textContent = '已复制'
+        copyBtn.classList.add('copied')
+        setTimeout(() => {
+          copyBtn.querySelector('span').textContent = '复制'
+          copyBtn.classList.remove('copied')
+        }, 2000)
+      })
+    })
+
+    header.appendChild(langSpan)
+    header.appendChild(copyBtn)
+
+    wrapper.appendChild(header)
+    pre.parentNode.insertBefore(wrapper, pre)
+    wrapper.appendChild(pre)
+  })
 }
 
 async function loadComments() {
@@ -143,10 +190,15 @@ async function handleLike() {
   if (!article.value || likeLoading.value) return
   likeLoading.value = true
   try {
-    const likeCount = await likeArticle(article.value.id)
-    article.value.likeCount = likeCount
-    const currentLike = article.value.isLike === true || article.value.isLike === 'true'
-    article.value.isLike = !currentLike
+    if (isLiked.value) {
+      await unlikeArticle(article.value.id)
+      article.value.isLike = false
+      article.value.likeCount = Math.max(0, (article.value.likeCount || 0) - 1)
+    } else {
+      await likeArticle(article.value.id)
+      article.value.isLike = true
+      article.value.likeCount = (article.value.likeCount || 0) + 1
+    }
   } finally {
     likeLoading.value = false
   }
@@ -481,10 +533,11 @@ watch(articleContent, () => {
 .title {
   margin: 0;
   font-size: 32px;
-  font-weight: 400;
+  font-weight: 700;
   color: var(--ink);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   line-height: 1.4;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
 }
 
 .author-info {
@@ -657,9 +710,9 @@ watch(articleContent, () => {
   line-height: 1.9;
   color: var(--ink-light);
   word-break: break-word;
-  font-size: 15px;
-  font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
-  letter-spacing: 0.03em;
+  font-size: 16px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .content :deep(img) {
@@ -676,11 +729,11 @@ watch(articleContent, () => {
 .content :deep(h5),
 .content :deep(h6) {
   color: var(--ink);
-  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
-  font-weight: 400;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  font-weight: 600;
   margin-top: 1.8em;
   margin-bottom: 0.6em;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .content :deep(h1) { font-size: 26px; }
@@ -714,18 +767,67 @@ watch(articleContent, () => {
 
 .content :deep(pre) {
   background: rgba(26, 26, 26, 0.95);
-  padding: 20px;
-  border-radius: 6px;
+  padding: 0;
+  border-radius: 0;
   overflow-x: auto;
+  margin: 0;
+}
+
+.content :deep(.code-block-wrapper) {
   margin: 16px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.content :deep(.code-block-header) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #2d2d2d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.content :deep(.code-block-lang) {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.05em;
+  text-transform: lowercase;
+}
+
+.content :deep(.code-block-copy) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.content :deep(.code-block-copy:hover) {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.content :deep(.code-block-copy.copied) {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.5);
 }
 
 .content :deep(pre code) {
   background: transparent;
   color: #e4e4e4;
-  padding: 0;
+  padding: 16px 20px;
   font-size: 14px;
   line-height: 1.6;
+  display: block;
 }
 
 .content :deep(ul),

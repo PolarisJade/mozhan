@@ -1,7 +1,8 @@
-﻿<script setup>
-import { onMounted, ref, watch } from 'vue'
+<script setup>
+import { onMounted, ref, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getEssayDetail, likeEssay, deleteEssay } from '@/api/essay'
+import { getEssayDetail, deleteEssay } from '@/api/essay'
+import { likeEssay, unlikeEssay } from '@/api/like'
 import { useUserStore } from '@/stores/user'
 import { InkMessage, InkMessageBox } from '@/utils/message'
 import { redirectToLogin } from '@/utils/auth'
@@ -12,7 +13,10 @@ const userStore = useUserStore()
 const loading = ref(false)
 const likeLoading = ref(false)
 const essay = ref(null)
-const isLiked = ref(false)
+
+const isLiked = computed(() => {
+  return essay.value?.isLike === true || essay.value?.isLike === 'true'
+})
 
 async function loadDetail() {
   loading.value = true
@@ -37,10 +41,15 @@ async function handleLike() {
   if (!essay.value || likeLoading.value) return
   likeLoading.value = true
   try {
-    await likeEssay(essay.value.id)
-    isLiked.value = !isLiked.value
-    essay.value.likeCount = (essay.value.likeCount || 0) + (isLiked.value ? 1 : -1)
-    InkMessage.success(isLiked.value ? '点赞成功' : '取消点赞')
+    if (isLiked.value) {
+      await unlikeEssay(essay.value.id)
+      essay.value.isLike = false
+      essay.value.likeCount = Math.max(0, (essay.value.likeCount || 0) - 1)
+    } else {
+      await likeEssay(essay.value.id)
+      essay.value.isLike = true
+      essay.value.likeCount = (essay.value.likeCount || 0) + 1
+    }
   } finally {
     likeLoading.value = false
   }

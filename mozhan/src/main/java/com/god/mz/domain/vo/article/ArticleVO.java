@@ -34,9 +34,11 @@ public class ArticleVO {
 
     private List<TagVO> tags;
 
-    private Integer likeCount;
+    private Long likeCount;
 
     private Integer commentCount;
+
+    private Boolean isLike;
 
     private Boolean isTop;
 

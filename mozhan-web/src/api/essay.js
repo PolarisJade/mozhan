@@ -23,7 +23,3 @@ export function deleteEssay(id) {
 export function getMyEssayList(userId, params) {
     return request.get(`/essay/my/${userId}`, { params })
 }
-
-export function likeEssay(id) {
-    return request.post(`/essay/like/id`, null, { params: { essayId: id } })
-}

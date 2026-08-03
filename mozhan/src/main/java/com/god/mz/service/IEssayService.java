@@ -22,4 +22,6 @@ public interface IEssayService extends IService<Essay> {
     void updateEssay(EssayDTO essayDTO);
 
     PageQueryVO<EssayVO> queryEssayPage(Integer pageNum, Integer pageSize, Long authorId);
+
+    void updateLikeCount(int maxSize);
 }

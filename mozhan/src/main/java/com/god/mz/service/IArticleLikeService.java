@@ -2,8 +2,6 @@ package com.god.mz.service;
 
 import com.god.mz.domain.po.ArticleLike;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.god.mz.domain.query.cursorQuery.CursorPageVO;
-import com.god.mz.domain.vo.user.BaseUserVO;
 
 /**
  * <p>
@@ -14,8 +12,7 @@ import com.god.mz.domain.vo.user.BaseUserVO;
  * @since 2026-05-09
  */
 public interface IArticleLikeService extends IService<ArticleLike> {
+    void addLikeArticle(Long targetId);
 
-    Integer likeArticle(Long articleId);
-
-    CursorPageVO<BaseUserVO> getLikeList(Long cursor, Integer pageSize,Long articleId);
+    void cancelLikeArticle(Long targetId);
 }

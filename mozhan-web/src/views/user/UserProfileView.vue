@@ -521,8 +521,8 @@ watch(() => route.params.userId, loadProfile)
 }
 
 .article-header h3 {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 700;
   color: #1a1a1a;
   margin: 0;
   flex: 1;

@@ -493,7 +493,7 @@ watch(() => route.query.keyword, (newKeyword) => {
   min-height: 100vh;
   display: flex;
   gap: 32px;
-  padding: 0;
+  padding: 0 352px 0 0;
   box-sizing: border-box;
 }
 
@@ -506,8 +506,8 @@ watch(() => route.query.keyword, (newKeyword) => {
   position: fixed;
   top: 98px;
   left: 50%;
-  transform: translateX(calc(-50% - 157px));
-  max-width: 860px;
+  transform: translateX(calc(-50% - 176px));
+  max-width: 820px;
   width: calc(100% - 30px);
   z-index: 50;
   background: var(--paper);
@@ -518,9 +518,9 @@ watch(() => route.query.keyword, (newKeyword) => {
   position: fixed;
   top: 70px;
   left: 50%;
-  transform: translateX(calc(-50% - 157px));
+  transform: translateX(calc(-50% - 176px));
   width: calc(100% - 30px);
-  max-width: 860px;
+  max-width: 820px;
   height: 30px;
   z-index: 49;
   background: var(--paper);
@@ -549,7 +549,7 @@ watch(() => route.query.keyword, (newKeyword) => {
   background: transparent;
   border-radius: 0;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   color: #666;
   transition: all 0.2s ease;
 }
@@ -663,18 +663,15 @@ watch(() => route.query.keyword, (newKeyword) => {
 .article-list {
   display: flex;
   flex-direction: column;
-  padding-top: 70px;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
+  padding-top: 100px;
+  background: transparent;
+  border-radius: 0;
+  gap: 12px;
 }
 
 .article-list > .article-card:first-child {
-  border-top: none;
   border-top-left-radius: 12px;
   border-top-right-radius: 12px;
-  background: #fff;
-  box-shadow: none;
 }
 
 .search-results .article-list {
@@ -685,10 +682,13 @@ watch(() => route.query.keyword, (newKeyword) => {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 24px 24px;
+  padding: 20px 18px;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-bottom: 1px solid #f0f0f0;
+  border: 1px solid rgba(26, 26, 26, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(26, 26, 26, 0.04);
   position: relative;
 }
 
@@ -701,14 +701,18 @@ watch(() => route.query.keyword, (newKeyword) => {
   position: absolute;
   left: 0;
   top: 0;
-  width: 3px;
-  height: 100%;
+  bottom: 0;
+  width: 4px;
   background: transparent;
-  transition: all 0.2s ease;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  transition: background 0.2s ease;
 }
 
 .article-card:hover {
   background-color: #fafafa;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.08);
 }
 
 .article-card:hover::before {
@@ -726,8 +730,8 @@ watch(() => route.query.keyword, (newKeyword) => {
 /* 右侧封面（仅 coverImage 不为 null 时渲染） */
 .article-cover {
   flex-shrink: 0;
-  width: 120px;
-  height: 80px;
+  width: 130px;
+  height: 90px;
   border-radius: 4px;
   overflow: hidden;
   background: #f5f5f5;
@@ -738,11 +742,6 @@ watch(() => route.query.keyword, (newKeyword) => {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.4s ease;
-}
-
-.article-card:hover .cover-img {
-  transform: scale(1.04);
 }
 
 .article-header {
@@ -753,8 +752,8 @@ watch(() => route.query.keyword, (newKeyword) => {
 }
 
 .article-header h3 {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 700;
   color: #1a1a1a;
   margin: 0;
   flex: 1;
@@ -765,7 +764,7 @@ watch(() => route.query.keyword, (newKeyword) => {
 }
 
 .summary {
-  font-size: 14px;
+  font-size: 15px;
   color: #666;
   line-height: 1.6;
   margin: 0 0 10px 0;
@@ -780,7 +779,7 @@ watch(() => route.query.keyword, (newKeyword) => {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 13px;
+  font-size: 14px;
   color: #999;
 }
 
@@ -877,11 +876,14 @@ watch(() => route.query.keyword, (newKeyword) => {
 }
 
 .sidebar {
-  width: 280px;
+  width: 320px;
   flex-shrink: 0;
-  position: sticky;
+  position: fixed;
   top: 88px;
+  left: 50%;
+  transform: translateX(calc(-50% + 426px));
   height: fit-content;
+  z-index: 10;
 }
 
 .sidebar-section {

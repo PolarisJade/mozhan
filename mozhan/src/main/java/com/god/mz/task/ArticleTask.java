@@ -58,6 +58,9 @@ public class ArticleTask {
         }
     }
 
+    /**
+     * 每周一凌晨 2:00 清除已被删除的文章
+     */
     @Transactional
     @Scheduled(cron = "0 0 2 ? * MON")
     public void deleteArticle() {

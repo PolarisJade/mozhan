@@ -341,6 +341,7 @@ watch(totalPages, async () => {
 .list-scroll {
   flex: 1;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 6px 0 20px;
 }
 .list-scroll::-webkit-scrollbar { width: 6px; }
@@ -427,6 +428,7 @@ watch(totalPages, async () => {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 36px 48px 60px;
   background: var(--paper-card);
 }

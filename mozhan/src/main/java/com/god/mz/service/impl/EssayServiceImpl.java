@@ -6,11 +6,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.god.mz.common.enums.BizCodeEnum;
+import com.god.mz.common.enums.LikeTypeEnum;
 import com.god.mz.domain.dto.EssayDTO;
-import com.god.mz.domain.po.Essay;
-import com.god.mz.domain.po.EssayTag;
-import com.god.mz.domain.po.Tag;
-import com.god.mz.domain.po.User;
+import com.god.mz.domain.po.*;
 import com.god.mz.domain.query.cursorQuery.CursorPageVO;
 import com.god.mz.domain.query.cursorQuery.CursorQuery;
 import com.god.mz.domain.query.cursorQuery.EssayCursorQuery;
@@ -26,7 +24,9 @@ import com.god.mz.service.IUserService;
 import com.god.mz.util.CursorCodeUtil;
 import com.god.mz.util.CursorQueryUtil;
 import com.god.mz.util.UserContext;
-import jakarta.annotation.Resource;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,13 +34,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements IEssayService {
-    @Resource
-    private EssayTagMapper essayTagMapper;
-    @Resource
-    private IUserService userService;
-    @Resource
-    private TagMapper tagMapper;
+
+    private final EssayTagMapper essayTagMapper;
+    private final IUserService userService;
+    private final TagMapper tagMapper;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Transactional
     @Override
@@ -66,7 +66,14 @@ public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements
             throw new BizException(BizCodeEnum.ESSAY_NOT_FOUND);
         }
 
-        return convertToVO(essay);
+        EssayVO vo = convertToVO(essay);
+
+        String key = LikeTypeEnum.essay.getSetKey(id);
+        Long redisCount = stringRedisTemplate.opsForSet().size(key);
+        if (redisCount != null && redisCount > 0) {
+            vo.setLikeCount(redisCount);
+        }
+        return vo;
     }
 
     @Override
@@ -283,6 +290,26 @@ public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements
         result.setPages(essayPage.getPages());
 
         return result;
+    }
+
+    @Override
+    @Transactional
+    public void updateLikeCount(int maxSize) {
+        String key = LikeTypeEnum.essay.getCountKey();
+        Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet().popMin(key, maxSize);
+        if (typedTuples == null) return;
+
+        List<Essay> list = new ArrayList<>(typedTuples.size());
+        for (ZSetOperations.TypedTuple<String> tuple : typedTuples) {
+            String targetId = tuple.getValue();
+            Double count = tuple.getScore();
+            if (targetId == null || count == null) continue;
+            Essay essay = new Essay();
+            essay.setId(Long.parseLong(targetId));
+            essay.setLikeCount(count.longValue());
+            list.add(essay);
+        }
+        updateBatchById(list);
     }
 
 }

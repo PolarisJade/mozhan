@@ -7,5 +7,9 @@ public interface RedisConstant {
     String CATEGORY_LIST = "mozhan:category:list";
     long DEFAULT_EXPIRE_HOURS = 168L;
     String STATISTIC_KEY = "mozhan:statistic";
+    String ESSAY_LIKE_KEY_PREFIX = "mozhan:like:essay:set:";
+    String ESSAY_LIKE_COUNT_KEY = "mozhan:like:essay:count";
+    String ARTICLE_LIKE_KEY_PREFIX = "mozhan:like:article:set:";
+    String ARTICLE_LIKE_COUNT_KEY = "mozhan:like:article:count";
     String HOT_ARTICLE_KEY = "mozhan:hot:article";
 }
