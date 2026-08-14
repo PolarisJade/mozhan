@@ -183,7 +183,7 @@ watch(
   <div class="chat-page">
     <div class="chat-sidebar">
       <div class="sidebar-header">
-        <h2 class="font-display">Messages</h2>
+        <h2 class="font-display">消息列表</h2>
         <span class="unread-badge" v-if="chatStore.unreadTotal > 0">
           {{ chatStore.unreadTotal }}
         </span>
@@ -336,7 +336,7 @@ watch(
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       </div>
-      <p>Select a conversation to start chatting</p>
+      <p>选择一个对话开始聊天吧</p>
     </div>
   </div>
 </template>
@@ -562,8 +562,7 @@ watch(
   padding: 20px 40px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  /* 默认隐藏滚动条，滚动/悬停时显现 */
+  gap: 4px;
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.25s ease;

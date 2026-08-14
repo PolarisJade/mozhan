@@ -19,18 +19,6 @@ let menuHideTimer = null
 // 私信未读总数
 const unreadTotal = computed(() => chatStore.unreadTotal || 0)
 
-const PenIcon = h('svg', {
-  class: 'pen-icon',
-  viewBox: '0 0 24 24',
-  fill: 'none',
-  stroke: 'currentColor',
-  'stroke-width': '1.5',
-  'stroke-linecap': 'round',
-  'stroke-linejoin': 'round'
-}, [
-  h('path', { d: 'M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z' })
-])
-
 const SearchIcon = h('svg', {
   class: 'search-icon',
   viewBox: '0 0 24 24',
@@ -163,20 +151,18 @@ function goChat() {
           <template v-if="userStore.isLoggedIn">
             <!-- 私信入口 -->
             <button class="chat-btn" :class="{ active: $route.name === 'Chat' }" @click="goChat" title="私信">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-              </svg>
+              <img src="@/assets/messages.svg" alt="私信" class="chat-icon-img" />
               <span v-if="unreadTotal > 0" class="chat-badge">{{ unreadTotal > 99 ? '99+' : unreadTotal }}</span>
             </button>
-            <div class="write-btn-wrapper">
-              <button class="write-btn" @mouseenter="showWriteMenu = true">
-                <component :is="PenIcon" />
+            <div class="write-btn-wrapper" @mouseenter="showWriteMenu = true" @mouseleave="showWriteMenu = false">
+              <button class="write-btn">
+                <img src="@/assets/write.svg" alt="创作" class="write-icon-img" />
                 <span>创作</span>
                 <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                   <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
-              <div v-show="showWriteMenu" class="user-menu" @mouseenter="showWriteMenu = true" @mouseleave="showWriteMenu = false">
+              <div v-show="showWriteMenu" class="user-menu">
                 <button class="menu-item" @click="goEssayWrite">
                   <span>随笔</span>
                 </button>
@@ -207,7 +193,7 @@ function goChat() {
           </template>
           <template v-else>
             <button class="write-btn" @click="goWrite">
-              <component :is="PenIcon" />
+              <img src="@/assets/write.svg" alt="写文章" class="write-icon-img" />
               <span>写文章</span>
             </button>
             <el-button link class="nav-link" @click="goLogin">登录</el-button>
@@ -464,14 +450,14 @@ function goChat() {
   color: var(--ink);
 }
 
-.write-btn .pen-icon {
-  width: 16px;
-  height: 16px;
+.write-btn .write-icon-img {
+  width: 20px;
+  height: 20px;
   opacity: 0.7;
   transition: opacity 0.2s ease;
 }
 
-.write-btn:hover .pen-icon {
+.write-btn:hover .write-icon-img {
   opacity: 1;
 }
 
@@ -517,6 +503,18 @@ function goChat() {
 .chat-btn svg {
   width: 22px;
   height: 22px;
+}
+
+.chat-btn .chat-icon-img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.chat-btn:hover .chat-icon-img,
+.chat-btn.active .chat-icon-img {
+  opacity: 1;
 }
 
 .chat-badge {

@@ -361,15 +361,18 @@ watch(articleContent, () => {
 
         <div class="stats-row">
           <span class="stat-item" @click="scrollToComments">
-            <svg class="icon-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg class="icon-comment" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/>
+              <path d="M7 11h10"/>
+              <path d="M7 15h6"/>
+              <path d="M7 7h8"/>
             </svg>
             <span>{{ article.commentCount ?? 0 }}</span>
           </span>
           <span class="stat-item like-item" @click="handleLike">
-            <svg :class="['icon-like', { liked: isLiked }]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M6 18c-2 0-4-1.5-4-4v-5c0-1.5 1-3 3-3h6l2 5h4c2 0 3 1.5 3 3v2c0 1.5-1.5 3-3 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 12l2 3 4-5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg :class="['icon-like', { liked: isLiked }]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>
+              <path d="M7 10v12"/>
             </svg>
             <span>{{ article.likeCount ?? 0 }}</span>
             <span class="like-text">{{ isLiked ? '已赞' : '点赞' }}</span>
@@ -689,12 +692,16 @@ watch(articleContent, () => {
 }
 
 .icon-like {
+  width: 20px;
+  height: 20px;
   stroke: #8B7355;
+  fill: none;
+  transition: all 0.2s ease;
 }
 
 .icon-like.liked {
-  stroke: #e74c3c;
-  fill: #ffeaea;
+  stroke: #e54d42;
+  fill: #e54d42;
 }
 
 .like-item {

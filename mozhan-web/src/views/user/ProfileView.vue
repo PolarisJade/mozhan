@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<script setup>
+﻿﻿<script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { InkMessage, InkMessageBox } from '@/utils/message'
@@ -387,39 +387,50 @@ onMounted(loadProfile)
               class="article-card ink-card"
               @click="goArticle(article.id)"
             >
-              <div class="article-header">
-                <h3>{{ article.title }}</h3>
-                <span :class="['status-tag', article.status === '草稿' ? 'draft' : 'published']">
+              <div class="article-main">
+                <div class="article-header">
+                  <h3>{{ article.title }}</h3>
+                </div>
+                <p class="summary">{{ article.summary || '暂无摘要' }}</p>
+                <div class="meta ink-meta">
+                  <span>{{ article.readCount }} 阅读</span>
+                  <span class="meta-divider">·</span>
+                  <span>{{ article.likeCount }} 点赞</span>
+                </div>
+                <div class="article-actions">
+                  <button class="action-btn edit-btn" @click.stop="goEdit(article.id)">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+                    </svg>
+                    <span>编辑</span>
+                  </button>
+                  <button v-if="article.status === '草稿'" class="action-btn publish-btn" @click.stop="goPublish(article.id)">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>发布</span>
+                  </button>
+                  <button class="action-btn delete-btn" @click.stop="handleDelete(article.id)">
+                    <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                    </svg>
+                    <span>删除</span>
+                  </button>
+                </div>
+              </div>
+              <div class="article-cover-wrap">
+                <div v-if="article.coverImage" class="article-cover">
+                  <img
+                    :src="article.coverImage"
+                    alt="封面"
+                    class="cover-img"
+                  />
+                </div>
+                <span :class="['status-tag', article.status === '草稿' ? 'draft' : 'published', 'cover-tag']">
                   {{ article.status === '草稿' ? '草稿' : '已发布' }}
                 </span>
-              </div>
-              <p class="summary">{{ article.summary || '暂无摘要' }}</p>
-              <div class="meta ink-meta">
-                <span>{{ article.readCount }} 阅读</span>
-                <span class="meta-divider">·</span>
-                <span>{{ article.likeCount }} 点赞</span>
-              </div>
-              <div class="article-actions">
-                <button class="action-btn edit-btn" @click.stop="goEdit(article.id)">
-                  <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-                  </svg>
-                  <span>编辑</span>
-                </button>
-                <button v-if="article.status === '草稿'" class="action-btn publish-btn" @click.stop="goPublish(article.id)">
-                  <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="17 8 12 3 7 8"/>
-                    <line x1="12" y1="3" x2="12" y2="15"/>
-                  </svg>
-                  <span>发布</span>
-                </button>
-                <button class="action-btn delete-btn" @click.stop="handleDelete(article.id)">
-                  <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
-                  </svg>
-                  <span>删除</span>
-                </button>
               </div>
             </article>
           </div>
@@ -754,7 +765,8 @@ onMounted(loadProfile)
 
 .article-card {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   padding: 20px 24px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -783,6 +795,37 @@ onMounted(loadProfile)
 
 .article-card:hover::before {
   background: #1a1a1a;
+}
+
+.article-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-cover-wrap {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: 16px;
+  padding: 6px 4px 0 0;
+}
+
+.article-cover {
+  width: 130px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-tag {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .article-header {

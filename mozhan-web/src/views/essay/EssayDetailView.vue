@@ -142,8 +142,9 @@ watch(() => route.params.id, loadDetail)
 
       <div class="actions-section">
         <button class="like-btn" :class="{ liked: isLiked }" @click="handleLike" :disabled="likeLoading">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          <svg viewBox="0 0 24 24" :fill="isLiked ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>
+            <path d="M7 10v12"/>
           </svg>
           <span>{{ essay.likeCount || 0 }}</span>
         </button>
@@ -193,11 +194,15 @@ watch(() => route.params.id, loadDetail)
   font-size: 16px;
   font-weight: 500;
   color: var(--ink);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .publish-time {
   font-size: 13px;
   color: var(--ink-muted);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .author-actions {
@@ -217,6 +222,8 @@ watch(() => route.params.id, loadDetail)
   color: var(--ink-light);
   cursor: pointer;
   transition: all 0.2s;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .action-btn svg {
@@ -244,6 +251,8 @@ watch(() => route.params.id, loadDetail)
   color: var(--ink);
   margin: 0;
   word-break: break-word;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .tags-section {
@@ -263,7 +272,7 @@ watch(() => route.params.id, loadDetail)
 }
 
 .tag-item :deep(.el-tag__content) {
-  font-family: 'Noto Serif SC', serif;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
   letter-spacing: 0.02em;
 }
 
@@ -285,6 +294,8 @@ watch(() => route.params.id, loadDetail)
   color: var(--ink-light);
   cursor: pointer;
   transition: all 0.2s;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .like-btn svg {

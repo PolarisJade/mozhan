@@ -2,6 +2,7 @@ package com.god.mz.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.god.mz.common.constant.RedisConstant;
 import com.god.mz.common.enums.BizCodeEnum;
 import com.god.mz.common.enums.UserStatusEnum;
 import com.god.mz.domain.dto.TagDTO;
@@ -22,6 +23,7 @@ import com.god.mz.service.ITagService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.god.mz.util.UserContext;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,6 +46,8 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements ITagS
     private EssayTagMapper essayTagMapper;
     @Resource
     private ArticleTagMapper articleTagMapper;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public List<TagVO> queryTagList() {
@@ -68,6 +72,9 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements ITagS
         if (!success) {
             throw new BizException(BizCodeEnum.OPERATION_FAILURE);
         }
+
+        //删除redis中缓存的数据
+        stringRedisTemplate.delete(RedisConstant.STATISTIC_KEY);
         return BeanUtil.copyProperties(tag, TagVO.class);
     }
 
@@ -86,6 +93,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements ITagS
         if (!success) {
             throw new BizException(BizCodeEnum.OPERATION_FAILURE);
         }
+        stringRedisTemplate.delete(RedisConstant.STATISTIC_KEY);
     }
 
     @Override

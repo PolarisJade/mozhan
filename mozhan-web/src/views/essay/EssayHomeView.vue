@@ -3,14 +3,20 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getEssayList } from '@/api/essay'
 import { getTagList } from '@/api/tag'
+import { likeEssay, unlikeEssay } from '@/api/like'
+import { useUserStore } from '@/stores/user'
+import { redirectToLogin } from '@/utils/auth'
+import { InkMessage } from '@/utils/message'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loading = ref(false)
 const essays = ref([])
 const hasMore = ref(false)
 const cursor = ref(null)
 const tags = ref([])
 const selectedTagIds = ref([])
+const likeLoading = ref(new Set())
 
 async function loadTags() {
   try {
@@ -44,6 +50,31 @@ async function loadEssays(reset = false) {
     console.error('加载随笔列表失败', e)
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleLike(e, item) {
+  e.stopPropagation()
+  if (!userStore.isLoggedIn) {
+    redirectToLogin('请先登录后再点赞')
+    return
+  }
+  if (likeLoading.value.has(item.id)) return
+  likeLoading.value.add(item.id)
+  try {
+    if (item.isLike) {
+      await unlikeEssay(item.id)
+      item.isLike = false
+      item.likeCount = Math.max(0, (item.likeCount || 0) - 1)
+    } else {
+      await likeEssay(item.id)
+      item.isLike = true
+      item.likeCount = (item.likeCount || 0) + 1
+    }
+  } catch (err) {
+    InkMessage.error('操作失败，请重试')
+  } finally {
+    likeLoading.value.delete(item.id)
   }
 }
 
@@ -177,12 +208,17 @@ onMounted(async () => {
             </span>
           </div>
           <div class="essay-footer">
-            <span class="like-count">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            <button
+              class="like-btn"
+              :class="{ liked: item.isLike }"
+              @click="toggleLike($event, item)"
+            >
+              <svg viewBox="0 0 24 24" :fill="item.isLike ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/>
+                <path d="M7 10v12"/>
               </svg>
-              {{ item.likeCount || 0 }}
-            </span>
+              <span>{{ item.likeCount || 0 }}</span>
+            </button>
             <span class="create-time">{{ formatTime(item.createTime) }}</span>
             <button class="detail-btn">详情</button>
           </div>
@@ -366,6 +402,8 @@ onMounted(async () => {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  letter-spacing: 0.02em;
 }
 
 .essay-tags {
@@ -391,17 +429,40 @@ onMounted(async () => {
   border-top: 1px solid rgba(26, 26, 26, 0.06);
 }
 
-.like-count {
+.like-btn {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 12px;
   color: #999;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
 }
 
-.like-count svg {
+.like-btn svg {
   width: 14px;
   height: 14px;
+  transition: all 0.2s;
+}
+
+.like-btn:hover {
+  color: #e74c3c;
+}
+
+.like-btn:hover svg {
+  stroke: #e74c3c;
+}
+
+.like-btn.liked {
+  color: #e74c3c;
+}
+
+.like-btn.liked svg {
+  fill: #e74c3c;
+  stroke: #e74c3c;
 }
 
 .create-time {

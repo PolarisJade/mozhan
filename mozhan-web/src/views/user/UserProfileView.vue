@@ -226,16 +226,25 @@ watch(() => route.params.userId, loadProfile)
               class="article-card ink-card"
               @click="goArticleDetail(article.id)"
             >
-              <div class="article-header">
-                <h3>{{ article.title }}</h3>
+              <div class="article-main">
+                <div class="article-header">
+                  <h3>{{ article.title }}</h3>
+                </div>
+                <p class="summary">{{ article.summary || '暂无摘要' }}</p>
+                <div class="meta ink-meta">
+                  <span>{{ article.createTime }}</span>
+                  <span class="meta-divider">·</span>
+                  <span>{{ article.readCount }} 阅读</span>
+                  <span class="meta-divider">·</span>
+                  <span>{{ article.likeCount }} 点赞</span>
+                </div>
               </div>
-              <p class="summary">{{ article.summary || '暂无摘要' }}</p>
-              <div class="meta ink-meta">
-                <span>{{ article.createTime }}</span>
-                <span class="meta-divider">·</span>
-                <span>{{ article.readCount }} 阅读</span>
-                <span class="meta-divider">·</span>
-                <span>{{ article.likeCount }} 点赞</span>
+              <div v-if="article.coverImage" class="article-cover">
+                <img
+                  :src="article.coverImage"
+                  alt="封面"
+                  class="cover-img"
+                />
               </div>
             </article>
           </div>
@@ -482,7 +491,8 @@ watch(() => route.params.userId, loadProfile)
 
 .article-card {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   padding: 20px 24px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -511,6 +521,25 @@ watch(() => route.params.userId, loadProfile)
 
 .article-card:hover::before {
   background: #1a1a1a;
+}
+
+.article-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-cover {
+  flex-shrink: 0;
+  width: 130px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .article-header {

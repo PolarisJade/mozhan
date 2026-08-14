@@ -240,10 +240,10 @@ function handleCancel() {
 
       <div class="tags-section">
         <el-select v-model="tagIds"
-          mode="multiple"
-          showSearch
+          multiple
+          filterable
           allow-create
-          defaultActiveFirstOption
+          default-first-option
           :reserve-keyword="false"
           placeholder="请选择或输入新标签"
           class="tag-select"

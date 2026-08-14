@@ -295,9 +295,10 @@ watch(totalPages, async () => {
   background: var(--paper);
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 .diary-frame {
-  flex: 1;
   display: flex;
   max-width: 1240px;
   width: 100%;
@@ -307,12 +308,13 @@ watch(totalPages, async () => {
   border-radius: 6px;
   box-shadow: 0 4px 24px rgba(26, 26, 26, 0.05);
   overflow: hidden;
-  height: calc(100vh - 68px - 12px);
+  height: calc(100vh - 92px - 32px - 60px);
 }
 /* 左侧列表 */
 .list-pane {
   width: 360px;
   flex-shrink: 0;
+  min-height: 0;
   border-right: 1px solid rgba(26, 26, 26, 0.06);
   display: flex;
   flex-direction: column;
@@ -340,8 +342,10 @@ watch(totalPages, async () => {
 }
 .list-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
   padding: 6px 0 20px;
 }
 .list-scroll::-webkit-scrollbar { width: 6px; }
@@ -427,8 +431,10 @@ watch(totalPages, async () => {
 .detail-pane {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
   padding: 36px 48px 60px;
   background: var(--paper-card);
 }
@@ -507,9 +513,10 @@ watch(totalPages, async () => {
   padding-bottom: 18px;
   border-bottom: 1px solid rgba(26, 26, 26, 0.08);
   margin-bottom: 28px;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-muted);
   letter-spacing: 0.04em;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
 }
 .info-item { display: flex; align-items: center; gap: 6px; }
 .info-icon { width: 14px; height: 14px; color: var(--ink-muted); }
@@ -517,8 +524,8 @@ watch(totalPages, async () => {
 .info-weather { color: var(--ink-light); }
 .info-weather :deep(.weather-icon) { width: 16px; height: 16px; color: var(--ink-muted); }
 .detail-content {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 15px;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Hiragino Sans GB', sans-serif;
+  font-size: 17px;
   line-height: 2;
   color: var(--ink);
   word-break: break-word;

@@ -21,7 +21,7 @@ public class Essay {
     private Long id;
     private Long authorId;
     private String content;
-    private Long LikeCount;
+    private Long likeCount;
 
     @TableField(fill = FieldFill.INSERT)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

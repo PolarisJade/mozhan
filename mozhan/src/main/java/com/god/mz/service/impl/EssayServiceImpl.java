@@ -20,6 +20,7 @@ import com.god.mz.mapper.EssayMapper;
 import com.god.mz.mapper.EssayTagMapper;
 import com.god.mz.mapper.TagMapper;
 import com.god.mz.service.IEssayService;
+import com.god.mz.service.ILikeService;
 import com.god.mz.service.IUserService;
 import com.god.mz.util.CursorCodeUtil;
 import com.god.mz.util.CursorQueryUtil;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements IEssayService {
 
     private final EssayTagMapper essayTagMapper;
+    private final ILikeService likeService;
     private final IUserService userService;
     private final TagMapper tagMapper;
     private final StringRedisTemplate stringRedisTemplate;
@@ -54,12 +56,13 @@ public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements
         }
 
         //保存随笔标签
-        List<EssayTag> essayTagList = essayDTO.getTagIdList().stream()
-                .map(tagId -> new EssayTag(null,essay.getId(), tagId)).toList();
-        essayTagMapper.insert(essayTagList);
+        if (essayDTO.getTagIdList() != null && !essayDTO.getTagIdList().isEmpty()) {
+            List<EssayTag> essayTagList = essayDTO.getTagIdList().stream()
+                    .map(tagId -> new EssayTag(null, essay.getId(), tagId)).toList();
+            essayTagMapper.insert(essayTagList);
+        }
     }
 
-    @Override
     public EssayVO getEssayDetail(Long id) {
         Essay essay = getById(id);
         if (essay == null){
@@ -73,6 +76,7 @@ public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements
         if (redisCount != null && redisCount > 0) {
             vo.setLikeCount(redisCount);
         }
+        vo.setIsLike(likeService.isLiked(LikeTypeEnum.essay, id));
         return vo;
     }
 
@@ -197,8 +201,31 @@ public class EssayServiceImpl extends ServiceImpl<EssayMapper, Essay> implements
 
         List<EssayVO> essayVOList = essayList.stream().map(this::convertToVO).toList();
 
+        // 批量填充点赞信息（是否点赞 + 点赞数兜底）
+        fillLikeInfo(essayVOList);
+
         List<Long> cursors = CursorQueryUtil.getNextCursor(essayList, sortBy, "create_time", "id");
         return new CursorPageVO<>(essayVOList, hasMore, CursorCodeUtil.encode(cursors));
+    }
+
+    private void fillLikeInfo(List<EssayVO> voList) {
+        if (voList == null || voList.isEmpty()) {
+            return;
+        }
+        List<Long> essayIds = voList.stream().map(EssayVO::getId).toList();
+
+        // 批量查询当前用户是否点赞（likeService 内部已处理未登录情况）
+        Set<Long> likedSet = likeService.isLiked(LikeTypeEnum.essay, essayIds);
+        if (likedSet == null) {
+            likedSet = Set.of();
+        }
+
+        for (EssayVO vo : voList) {
+            vo.setIsLike(likedSet.contains(vo.getId()));
+            if (vo.getLikeCount() == null) {
+                vo.setLikeCount(0L);
+            }
+        }
     }
 
     @Override
