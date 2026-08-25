@@ -39,6 +39,15 @@ spring:
             enable: true
           socketFactory:
             class: javax.net.ssl.SSLSocketFactory
+  ai:
+    dashscope:
+      chat:
+        options:
+          model: ${spring.ai.dashscope.chat.options.model}
+          # enable-thinking: true
+          multi-model: true       #当前模型具有多模态能力，需开启multi-model
+      api-key: ${spring.ai.dashscope.api-key}
+
 
 jwt:
   secret: ${jwt.secret}
@@ -60,4 +69,12 @@ mybatis-plus:
 diary:
   aes-key: ${diary.aes-key}
 
+mozhan:
+  ai:
+    session:
+      title: AI助手
+      describe: 你的个人AI助手
+      examples:
+        - title: 文章推荐
+          describe: 获取文章推荐
 

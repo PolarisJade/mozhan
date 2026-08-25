@@ -102,11 +102,20 @@ function setupCodeBlocks() {
   if (!content) return
   const pres = content.querySelectorAll('pre')
   pres.forEach(pre => {
+    // 移除编辑器保存时遗留的内嵌头部（语言标签 + 复制按钮），避免与下方新头部重复
+    const legacyHeader = pre.querySelector('.editor-code-header')
+    let embeddedLang = ''
+    if (legacyHeader) {
+      const langSpan = legacyHeader.querySelector('.editor-code-lang')
+      embeddedLang = langSpan ? langSpan.textContent.trim() : ''
+      legacyHeader.remove()
+    }
+
     // 检查是否已有 wrapper
     if (pre.parentElement && pre.parentElement.classList.contains('code-block-wrapper')) return
 
     const code = pre.querySelector('code')
-    const lang = code && code.className ? code.className.replace('language-', '').replace('hljs language-', '') : 'text'
+    const lang = embeddedLang || (code && code.className ? code.className.replace('language-', '').replace('hljs language-', '') : 'text')
 
     const wrapper = document.createElement('div')
     wrapper.className = 'code-block-wrapper'

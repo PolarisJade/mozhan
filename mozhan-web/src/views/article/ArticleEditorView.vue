@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref, reactive, watch, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, reactive, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { InkMessage } from '@/utils/message'
 import 'vditor/dist/index.css'
@@ -9,6 +9,14 @@ import { getTagList, createTag } from '@/api/tag'
 import { uploadImage } from '@/api/upload'
 import { useUserStore } from '@/stores/user'
 import { redirectToLogin } from '@/utils/auth'
+import formatIcon from '@/assets/edit/format.svg'
+import strongerIcon from '@/assets/edit/stronger.svg'
+import otherIcon from '@/assets/edit/other.svg'
+import quoteIcon from '@/assets/edit/quote.svg'
+import codeIcon from '@/assets/edit/code.svg'
+import listIcon from '@/assets/edit/list.svg'
+import alignIcon from '@/assets/edit/align.svg'
+import photoIcon from '@/assets/edit/photo.svg'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -583,23 +591,70 @@ function removeCover() {
   form.coverImage = ''
 }
 
-const toolbarButtons = [
-  { label: 'H1', action: () => execCommand('formatBlock', 'h1') },
-  { label: 'H2', action: () => execCommand('formatBlock', 'h2') },
-  { label: 'H3', action: () => execCommand('formatBlock', 'h3') },
-  { label: '粗体', action: () => execCommand('bold') },
-  { label: '斜体', action: () => execCommand('italic') },
-  { label: '下划线', action: () => execCommand('underline') },
-  { label: '删除线', action: () => execCommand('strikeThrough') },
-  { label: '引用', action: () => execCommand('formatBlock', 'blockquote') },
-  { label: '代码', action: wrapCode },
-  { label: '无序列表', action: () => execCommand('insertUnorderedList') },
-  { label: '有序列表', action: () => execCommand('insertOrderedList') },
-  { label: '左对齐', action: () => execCommand('justifyLeft') },
-  { label: '居中', action: () => execCommand('justifyCenter') },
-  { label: '右对齐', action: () => execCommand('justifyRight') },
-  { label: '图片', action: triggerImageSelect },
+const openDropdown = ref('')
+
+const formatItems = [
+  { label: '正文', size: '16px', action: () => execCommand('formatBlock', 'p') },
+  { label: '标题一', size: '32px', action: () => execCommand('formatBlock', 'h1') },
+  { label: '标题二', size: '28px', action: () => execCommand('formatBlock', 'h2') },
+  { label: '标题三', size: '24px', action: () => execCommand('formatBlock', 'h3') },
+  { label: '标题四', size: '20px', action: () => execCommand('formatBlock', 'h4') },
+  { label: '标题五', size: '18px', action: () => execCommand('formatBlock', 'h5') },
+  { label: '标题六', size: '16px', action: () => execCommand('formatBlock', 'h6') },
 ]
+
+const toolbarGroups = [
+  { label: '格式', icon: formatIcon, type: 'dropdown', items: formatItems },
+  { label: '粗体', icon: strongerIcon, type: 'button', action: () => execCommand('bold') },
+  {
+    label: '其它',
+    icon: otherIcon,
+    type: 'dropdown',
+    items: [
+      { label: '斜体', action: () => execCommand('italic') },
+      { label: '下划线', action: () => execCommand('underline') },
+      { label: '删除线', action: () => execCommand('strikeThrough') },
+    ],
+  },
+  { label: '引用', icon: quoteIcon, type: 'button', action: () => execCommand('formatBlock', 'blockquote') },
+  { label: '代码', icon: codeIcon, type: 'button', action: wrapCode },
+  {
+    label: '列表',
+    icon: listIcon,
+    type: 'dropdown',
+    items: [
+      { label: '无序列表', action: () => execCommand('insertUnorderedList') },
+      { label: '有序列表', action: () => execCommand('insertOrderedList') },
+    ],
+  },
+  {
+    label: '对齐',
+    icon: alignIcon,
+    type: 'dropdown',
+    items: [
+      { label: '左对齐', action: () => execCommand('justifyLeft') },
+      { label: '居中对齐', action: () => execCommand('justifyCenter') },
+      { label: '右对齐', action: () => execCommand('justifyRight') },
+    ],
+  },
+  { label: '图片', icon: photoIcon, type: 'button', action: triggerImageSelect },
+]
+
+function toggleDropdown(label) {
+  openDropdown.value = openDropdown.value === label ? '' : label
+}
+
+function handleDropdownItem(item) {
+  item.action()
+  openDropdown.value = ''
+}
+
+function handleToolbarClickOutside(e) {
+  const wrapper = document.querySelector('.editor-toolbar-wrapper')
+  if (wrapper && !wrapper.contains(e.target)) {
+    openDropdown.value = ''
+  }
+}
 
 async function handleSubmit(publish = false) {
   if (!userStore.isLoggedIn) {
@@ -663,6 +718,7 @@ onMounted(() => {
   }
   
   loadCategoriesAndTags()
+  document.addEventListener('mousedown', handleToolbarClickOutside)
   
   const id = router.currentRoute.value.params.id
   if (id) {
@@ -670,6 +726,10 @@ onMounted(() => {
     articleId.value = id
     setTimeout(() => loadArticle(), 300)
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('mousedown', handleToolbarClickOutside)
 })
 </script>
 
@@ -814,16 +874,46 @@ onMounted(() => {
 
     <div class="editor-toolbar-wrapper">
       <div class="editor-toolbar">
-        <button
-          v-for="btn in toolbarButtons"
-          :key="btn.label"
-          type="button"
-          class="toolbar-btn"
-          @mousedown.prevent="btn.action"
-          :title="btn.label"
-        >
-          {{ btn.label }}
-        </button>
+        <template v-for="group in toolbarGroups" :key="group.label">
+          <div v-if="group.type === 'dropdown'" class="toolbar-dropdown">
+            <button
+              type="button"
+              class="toolbar-btn dropdown-toggle"
+              :class="{ active: openDropdown === group.label }"
+              :title="group.label"
+              @mousedown.prevent
+              @click.stop="toggleDropdown(group.label)"
+            >
+              <img class="toolbar-icon" :src="group.icon" alt="" />
+              <span>{{ group.label }}</span>
+              <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <div v-show="openDropdown === group.label" class="toolbar-dropdown-menu" @mousedown.prevent>
+              <button
+                v-for="item in group.items"
+                :key="item.label"
+                type="button"
+                class="toolbar-dropdown-item"
+                :style="item.size ? { fontSize: item.size } : undefined"
+                @click="handleDropdownItem(item)"
+              >
+                {{ item.label }}
+              </button>
+            </div>
+          </div>
+          <button
+            v-else
+            type="button"
+            class="toolbar-btn"
+            :title="group.label"
+            @mousedown.prevent="group.action"
+          >
+            <img class="toolbar-icon" :src="group.icon" alt="" />
+            <span>{{ group.label }}</span>
+          </button>
+        </template>
       </div>
     </div>
 
@@ -860,6 +950,15 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+}
+
+.editor-header .ink-page-title {
+  font-size: 26px;
+}
+
+.header-actions .ink-btn,
+.header-actions .ink-btn-plain {
+  font-size: 16px;
 }
 
 .header-actions {
@@ -909,13 +1008,13 @@ onMounted(() => {
 
 .cover-text {
   font-family: 'Noto Serif SC', serif;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink);
   letter-spacing: 0.05em;
 }
 
 .cover-hint {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-muted);
   letter-spacing: 0.02em;
 }
@@ -925,7 +1024,7 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-light);
 }
 
@@ -978,7 +1077,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  font-size: 13px;
+  font-size: 15px;
   font-family: 'Noto Serif SC', serif;
   color: #fff;
   background: rgba(255, 255, 255, 0.15);
@@ -1048,14 +1147,14 @@ onMounted(() => {
 }
 
 .tag-tip {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--ink-muted);
   margin-top: 8px;
   letter-spacing: 0.02em;
 }
 
 .editor-form :deep(.el-select .el-tag) {
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .editor-toolbar-wrapper {
@@ -1076,20 +1175,92 @@ onMounted(() => {
 }
 
 .toolbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 15px;
   font-family: 'Noto Serif SC', serif;
   color: var(--ink-light);
   background: transparent;
-  border: 1px solid rgba(74, 74, 74, 0.15);
+  border: none;
   border-radius: 3px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
+.toolbar-icon {
+  width: 15px;
+  height: 15px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.toolbar-btn:hover .toolbar-icon {
+  opacity: 1;
+}
+
 .toolbar-btn:hover {
   background: rgba(74, 74, 74, 0.05);
-  border-color: var(--ink-light);
+  color: var(--ink);
+}
+
+.toolbar-dropdown {
+  position: relative;
+}
+
+.toolbar-btn.dropdown-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-btn.dropdown-toggle.active {
+  background: rgba(74, 74, 74, 0.05);
+  color: var(--ink);
+}
+
+.toolbar-dropdown .arrow-icon {
+  width: 11px;
+  height: 11px;
+  opacity: 0.7;
+  transition: transform 0.2s;
+}
+
+.toolbar-btn.dropdown-toggle.active .arrow-icon {
+  transform: rotate(180deg);
+}
+
+.toolbar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 110px;
+  background: #fff;
+  border: 1px solid rgba(74, 74, 74, 0.12);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px 0;
+  z-index: 200;
+}
+
+.toolbar-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 6px 14px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 15px;
+  color: var(--ink-light);
+  background: transparent;
+  border: none;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.toolbar-dropdown-item:hover {
+  background: rgba(74, 74, 74, 0.05);
   color: var(--ink);
 }
 
@@ -1126,17 +1297,24 @@ onMounted(() => {
 
 .rich-editor :deep(h1),
 .rich-editor :deep(h2),
-.rich-editor :deep(h3) {
+.rich-editor :deep(h3),
+.rich-editor :deep(h4),
+.rich-editor :deep(h5),
+.rich-editor :deep(h6) {
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
   font-weight: 600;
   color: var(--ink);
-  margin-top: 1.5em;
+  margin-top: 0.4em;
   margin-bottom: 0.5em;
+  line-height: 1.4;
 }
 
-.rich-editor :deep(h1) { font-size: 24px; letter-spacing: 0.1em; }
-.rich-editor :deep(h2) { font-size: 20px; letter-spacing: 0.08em; }
-.rich-editor :deep(h3) { font-size: 18px; letter-spacing: 0.05em; }
+.rich-editor :deep(h1) { font-size: 32px; letter-spacing: 0.08em; }
+.rich-editor :deep(h2) { font-size: 28px; letter-spacing: 0.06em; }
+.rich-editor :deep(h3) { font-size: 24px; letter-spacing: 0.04em; }
+.rich-editor :deep(h4) { font-size: 20px; }
+.rich-editor :deep(h5) { font-size: 18px; }
+.rich-editor :deep(h6) { font-size: 16px; }
 
 .rich-editor :deep(p) {
   margin-bottom: 0.6em;

@@ -42,7 +42,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user-follow/*",
                         "/admin/*",
                         "/chat/*",
-                        "/diary/**"
+                        "/diary/**",
+                        "/ai/**"
                 )
                 .excludePathPatterns(
                         "/admin/user/login"
