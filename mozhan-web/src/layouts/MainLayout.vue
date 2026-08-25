@@ -14,7 +14,8 @@ const searchKeyword = ref('')
 const searchFocused = ref(false)
 const showUserMenu = ref(false)
 const showWriteMenu = ref(false)
-let menuHideTimer = null
+let userMenuHideTimer = null
+let writeMenuHideTimer = null
 
 // 私信未读总数
 const unreadTotal = computed(() => chatStore.unreadTotal || 0)
@@ -56,17 +57,36 @@ function handleLogout() {
 }
 
 function handleMenuEnter() {
-  if (menuHideTimer) {
-    clearTimeout(menuHideTimer)
-    menuHideTimer = null
+  if (userMenuHideTimer) {
+    clearTimeout(userMenuHideTimer)
+    userMenuHideTimer = null
   }
+  // 打开用户菜单时同时收起创作菜单
+  showWriteMenu.value = false
   showUserMenu.value = true
 }
 
 function handleMenuLeave() {
-  menuHideTimer = setTimeout(() => {
+  userMenuHideTimer = setTimeout(() => {
     showUserMenu.value = false
-    menuHideTimer = null
+    userMenuHideTimer = null
+  }, 200)
+}
+
+function handleWriteMenuEnter() {
+  if (writeMenuHideTimer) {
+    clearTimeout(writeMenuHideTimer)
+    writeMenuHideTimer = null
+  }
+  // 打开创作菜单时同时收起用户菜单
+  showUserMenu.value = false
+  showWriteMenu.value = true
+}
+
+function handleWriteMenuLeave() {
+  writeMenuHideTimer = setTimeout(() => {
+    showWriteMenu.value = false
+    writeMenuHideTimer = null
   }, 200)
 }
 
@@ -154,7 +174,7 @@ function goChat() {
               <img src="@/assets/messages.svg" alt="私信" class="chat-icon-img" />
               <span v-if="unreadTotal > 0" class="chat-badge">{{ unreadTotal > 99 ? '99+' : unreadTotal }}</span>
             </button>
-            <div class="write-btn-wrapper" @mouseenter="showWriteMenu = true" @mouseleave="showWriteMenu = false">
+            <div class="write-btn-wrapper" @mouseenter="handleWriteMenuEnter" @mouseleave="handleWriteMenuLeave">
               <button class="write-btn">
                 <img src="@/assets/write.svg" alt="创作" class="write-icon-img" />
                 <span>创作</span>
