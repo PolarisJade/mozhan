@@ -1,16 +1,23 @@
 package com.god.mz.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.stream.StreamUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.god.mz.common.enums.MessageTypeEnum;
 import com.god.mz.config.AISessionProperties;
 import com.god.mz.domain.po.AiSession;
+import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
 import com.god.mz.mapper.AiSessionMapper;
+import com.god.mz.service.AIChatService;
 import com.god.mz.service.IAiSessionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.god.mz.util.UserContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +35,8 @@ import java.util.List;
 public class AiSessionServiceImpl extends ServiceImpl<AiSessionMapper, AiSession> implements IAiSessionService {
 
     private final AISessionProperties aiSessionProperties;
+
+    private final ChatMemory chatMemory;
 
     @Override
     public SessionVO createSession(Integer num) {
@@ -67,5 +76,25 @@ public class AiSessionServiceImpl extends ServiceImpl<AiSessionMapper, AiSession
     @Override
     public List<SessionVO.Example> getHotProblem(Integer num) {
         return RandomUtil.randomEleList(aiSessionProperties.getExamples(), num);
+    }
+
+    @Override
+    public List<MessageVO> queryBySessionId(String sessionId) {
+        //将sessionId转换为对话Id
+        String conversationId = AIChatService.getConversationId(sessionId);
+
+        //查询对话列表
+        List<Message> messageList = chatMemory.get(conversationId);
+
+        //转换为VO列表
+        return StreamUtil.of(messageList)
+                .filter(message -> message.getMessageType() == MessageType.USER ||
+                        message.getMessageType() == MessageType.ASSISTANT)
+                .map(message -> MessageVO.builder()
+                        .type(MessageTypeEnum.valueOf(message.getMessageType().name()))
+                        .content(message.getText())
+                        .build())
+                .toList();
+
     }
 }

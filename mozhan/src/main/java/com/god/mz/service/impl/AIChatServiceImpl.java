@@ -1,9 +1,13 @@
 package com.god.mz.service.impl;
 
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.ObjectUtil;
+import com.god.mz.common.constant.AIToolConstant;
 import com.god.mz.common.enums.ChatEventTypeEnum;
 import com.god.mz.domain.vo.ai.ChatEventVO;
 import com.god.mz.service.AIChatService;
+import com.god.mz.util.ToolResultHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -13,6 +17,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+
+import java.util.Map;
 
 import static com.god.mz.common.constant.RedisConstant.CHAT_SESSION_GENERATE_STATUS_KEY;
 
@@ -29,6 +35,10 @@ public class AIChatServiceImpl implements AIChatService {
      */
     private static final String SYSTEM_PROMPT = ResourceUtil.readUtf8Str("prompt/xiaozhan-system.txt");
 
+    public static final ChatEventVO STOP_EVENT = ChatEventVO.builder()
+            .eventType(ChatEventTypeEnum.STOP.getValue())
+            .build();
+
 
 
     @Override
@@ -36,6 +46,8 @@ public class AIChatServiceImpl implements AIChatService {
 
         //获取对话Id
         String conversationId = AIChatService.getConversationId(sessionId);
+        //生成请求Id
+        String requestId = IdUtil.simpleUUID();
 
         BoundHashOperations<String, Object, Object> hashOps = stringRedisTemplate.boundHashOps(CHAT_SESSION_GENERATE_STATUS_KEY);
 
@@ -48,6 +60,7 @@ public class AIChatServiceImpl implements AIChatService {
                 )
                 .user(question)
                 .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))   //设置对话记忆中的对话id
+                .toolContext(Map.of(AIToolConstant.REQUEST_ID, requestId))     //向工具中添加传递参数
                 .stream()
                 .chatResponse()
                 .doFirst(() -> hashOps.put(conversationId, "true"))    // 开始生成时，设置标识
@@ -66,11 +79,29 @@ public class AIChatServiceImpl implements AIChatService {
                             .eventType(ChatEventTypeEnum.DATA.getValue())
                             .build();
                 })
-                .concatWith(Flux.just(ChatEventVO.builder()
-                        .eventData(null)
-                        .eventType(ChatEventTypeEnum.STOP.getValue())
-                        .build()));
+                .concatWith(Flux.defer(() -> {
+                    Map<String, Object> result = ToolResultHolder.get(requestId);
+                    if (ObjectUtil.isNotEmpty(result)) {
+                        ToolResultHolder.remove(requestId);
 
+                        //工具被调用了，需要向前端传递参数
+                        return Flux.just(ChatEventVO.builder()
+                                .eventData(result)
+                                .eventType(ChatEventTypeEnum.PARAM.getValue())
+                                .build(), STOP_EVENT
+                        );
+                    }
+
+                    return Flux.just(STOP_EVENT);
+                }));
+
+    }
+
+    @Override
+    public void stop(String sessionId) {
+        BoundHashOperations<String, Object, Object> hashOps = stringRedisTemplate.boundHashOps(CHAT_SESSION_GENERATE_STATUS_KEY);
+        String conversationId = AIChatService.getConversationId(sessionId);
+        hashOps.delete(conversationId);
     }
 
     private void saveStopHistoryRecord(String conversationId, String content) {

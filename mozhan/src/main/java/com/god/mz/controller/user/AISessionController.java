@@ -2,6 +2,7 @@ package com.god.mz.controller.user;
 
 
 import com.god.mz.domain.vo.Result;
+import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
 import com.god.mz.service.IAiSessionService;
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,15 @@ public class AISessionController {
     public Result<List<SessionVO.Example>> getHotProblem(@RequestParam(value = "num", defaultValue = "3") Integer num) {
         List<SessionVO.Example> hotProblem = aiSessionService.getHotProblem(num);
         return Result.success(hotProblem);
+    }
+
+    /**
+     * 查询单个历史对话详情
+     *
+     * @return 对话记录列表
+     */
+    @GetMapping("/{sessionId}")
+    public List<MessageVO> queryBySessionId(@PathVariable("sessionId") String sessionId) {
+        return aiSessionService.queryBySessionId(sessionId);
     }
 }

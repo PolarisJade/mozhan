@@ -9,6 +9,9 @@ import com.god.mz.domain.vo.article.ArticleDetailVO;
 import com.god.mz.domain.vo.article.ArticleInfoVO;
 import com.god.mz.domain.vo.article.ArticleVO;
 import com.god.mz.domain.vo.article.HotArticleVO;
+import com.god.mz.tool.result.ArticleInfo;
+
+import java.util.List;
 
 /**
  * <p>
@@ -41,4 +44,6 @@ public interface IArticleService extends IService<Article> {
     PageQueryVO<HotArticleVO> getHotArticle(ArticlePageQuery query);
 
     void updateLikeCount(int maxSize);
+
+    List<ArticleInfo> queryArticleByName(String keyword);
 }

@@ -26,6 +26,7 @@ import com.god.mz.mapper.*;
 import com.god.mz.service.IArticleService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.god.mz.service.ILikeService;
+import com.god.mz.tool.result.ArticleInfo;
 import com.god.mz.util.ArticleVOBuilder;
 import com.god.mz.util.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -330,6 +331,28 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             list.add(article);
         }
         updateBatchById(list);
+    }
+
+    @Override
+    public List<ArticleInfo> queryArticleByName(String keyword) {
+        //根据关键词查询文章
+        List<Article> articleList = lambdaQuery()
+                .like(Article::getTitle, keyword)
+                .like(Article::getSummary, keyword)
+                .list();
+
+        //获取文章列表中的作者name
+        Set<Long> authorIds = articleList.stream().map(Article::getAuthorId).collect(Collectors.toSet());
+        List<User> authorList = userMapper.selectByIds(authorIds);
+        Map<Long, String> authorMap = authorList.stream().collect(Collectors.toMap(User::getId, User::getNickname));
+
+        return articleList.stream()
+                .map(article -> ArticleInfo.builder()
+                .authorName(authorMap.get(article.getAuthorId()))
+                .title(article.getTitle())
+                .summary(article.getSummary())
+                .id(article.getId())
+                .build()).collect(Collectors.toList());
     }
 
     private List<HotArticleVO> loadHotArticlesFromDb(Integer limit) {

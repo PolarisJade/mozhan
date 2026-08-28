@@ -2,6 +2,7 @@ package com.god.mz.service;
 
 import com.god.mz.domain.po.AiSession;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
 
 import java.util.List;
@@ -19,4 +20,6 @@ public interface IAiSessionService extends IService<AiSession> {
     SessionVO createSession(Integer num);
 
     List<SessionVO.Example> getHotProblem(Integer num);
+
+    List<MessageVO> queryBySessionId(String sessionId);
 }
