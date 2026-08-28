@@ -17,4 +17,6 @@ public interface AIChatService {
     }
 
     Flux<ChatEventVO> chat(String question, String sessionId);
+
+    void stop(String sessionId);
 }

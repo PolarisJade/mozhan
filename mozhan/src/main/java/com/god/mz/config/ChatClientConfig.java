@@ -1,6 +1,7 @@
 package com.god.mz.config;
 
 import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
+import com.god.mz.tool.ArticleTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -20,9 +21,11 @@ public class ChatClientConfig {
     @Bean
     public ChatClient chatClient(ChatClient.Builder chatClientBuilder,
                                  Advisor loggerAdvisor,
-                                 Advisor messageChatMemoryAdvisor) {  // 日志记录器
+                                 Advisor messageChatMemoryAdvisor,
+                                 ArticleTools articleTools) {  // 日志记录器
         return chatClientBuilder
                 .defaultAdvisors(loggerAdvisor, messageChatMemoryAdvisor) //添加 Advisor 功能增强
+                .defaultTools(articleTools)
                 .build();
     }
 
