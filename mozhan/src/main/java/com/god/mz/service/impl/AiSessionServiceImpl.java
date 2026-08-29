@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.stream.StreamUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.god.mz.common.constant.AIToolConstant;
 import com.god.mz.common.enums.MessageTypeEnum;
 import com.god.mz.config.AISessionProperties;
 import com.god.mz.domain.po.AiSession;
@@ -16,11 +17,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.god.mz.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -93,8 +96,26 @@ public class AiSessionServiceImpl extends ServiceImpl<AiSessionMapper, AiSession
                 .map(message -> MessageVO.builder()
                         .type(MessageTypeEnum.valueOf(message.getMessageType().name()))
                         .content(message.getText())
+                        .params(extractParams(message))
                         .build())
                 .toList();
 
+    }
+
+    /**
+     * 从助手消息的metadata中提取工具结果参数
+     *
+     * @param message 对话消息
+     * @return 工具结果参数，无则为null
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> extractParams(Message message) {
+        if (message instanceof AssistantMessage assistantMessage) {
+            Object params = assistantMessage.getMetadata().get(AIToolConstant.Memory.PARAMS_KEY);
+            if (params instanceof Map) {
+                return (Map<String, Object>) params;
+            }
+        }
+        return null;
     }
 }

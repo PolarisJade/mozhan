@@ -3,6 +3,7 @@ package com.god.mz.service.impl;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import com.god.mz.common.constant.AIToolConstant;
 import com.god.mz.common.enums.ChatEventTypeEnum;
 import com.god.mz.domain.vo.ai.ChatEventVO;
@@ -11,13 +12,18 @@ import com.god.mz.util.ToolResultHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.god.mz.common.constant.RedisConstant.CHAT_SESSION_GENERATE_STATUS_KEY;
@@ -28,6 +34,7 @@ public class AIChatServiceImpl implements AIChatService {
 
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
+    private final ChatMemoryRepository chatMemoryRepository;
     private final StringRedisTemplate stringRedisTemplate;
 
     /**
@@ -84,6 +91,9 @@ public class AIChatServiceImpl implements AIChatService {
                     if (ObjectUtil.isNotEmpty(result)) {
                         ToolResultHolder.remove(requestId);
 
+                        //工具被调用了，将工具结果补充到记忆的最后一条助手消息中，保证历史记录不丢失参数
+                        appendToolParamsToHistory(conversationId, result);
+
                         //工具被调用了，需要向前端传递参数
                         return Flux.just(ChatEventVO.builder()
                                 .eventData(result)
@@ -106,5 +116,34 @@ public class AIChatServiceImpl implements AIChatService {
 
     private void saveStopHistoryRecord(String conversationId, String content) {
         chatMemory.add(conversationId, new AssistantMessage(content));
+    }
+
+    /**
+     * 将工具结果参数追加到对话记忆中最后一条助手消息的metadata里
+     *
+     * @param conversationId 对话id
+     * @param params         工具结果参数
+     */
+    private void appendToolParamsToHistory(String conversationId, Map<String, Object> params) {
+        List<Message> messages = new ArrayList<>(chatMemory.get(conversationId));
+
+        //倒序找到最后一条助手消息
+        for (int i = messages.size() - 1; i >= 0; i--) {
+            if (messages.get(i) instanceof AssistantMessage assistantMessage) {
+                //保留原有metadata，追加工具参数
+                Map<String, Object> metadata = new HashMap<>(assistantMessage.getMetadata());
+                metadata.put(AIToolConstant.Memory.PARAMS_KEY, params);
+
+                messages.set(i, AssistantMessage.builder()
+                        .content(StrUtil.nullToEmpty(assistantMessage.getText()))
+                        .properties(metadata)
+                        .toolCalls(assistantMessage.getToolCalls())
+                        .media(assistantMessage.getMedia())
+                        .build());
+
+                chatMemoryRepository.saveAll(conversationId, messages);
+                return;
+            }
+        }
     }
 }
