@@ -8,6 +8,7 @@ import com.god.mz.common.constant.AIToolConstant;
 import com.god.mz.common.enums.ChatEventTypeEnum;
 import com.god.mz.domain.vo.ai.ChatEventVO;
 import com.god.mz.service.AIChatService;
+import com.god.mz.service.IAISessionService;
 import com.god.mz.util.ToolResultHolder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,6 +37,7 @@ public class AIChatServiceImpl implements AIChatService {
     private final ChatMemory chatMemory;
     private final ChatMemoryRepository chatMemoryRepository;
     private final StringRedisTemplate stringRedisTemplate;
+    private final IAISessionService aiSessionService;
 
     /**
      * 小栈助手的系统提示词，从 resources/prompt/xiaozhan-system.txt 读取
@@ -60,6 +62,8 @@ public class AIChatServiceImpl implements AIChatService {
 
         // 大模型输出内容的缓存器，用于在输出中断后的数据存储
         StringBuilder outputBuilder = new StringBuilder();
+
+        aiSessionService.update(sessionId, question);
 
         return chatClient.prompt()
                 .system(systemPrompt ->

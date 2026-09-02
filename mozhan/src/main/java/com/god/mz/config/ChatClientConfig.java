@@ -1,6 +1,8 @@
 package com.god.mz.config;
 
 import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
+import com.god.mz.common.constant.AIToolConstant;
+import com.god.mz.common.constant.RedisConstant;
 import com.god.mz.tool.ArticleTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -44,6 +46,7 @@ public class ChatClientConfig {
                 .port(redisProperties.getPort())
                 .password(redisProperties.getPassword())
                 .database(redisProperties.getDatabase())
+                .keyPrefix(RedisConstant.CHAT_MEMORY_PREFIX)
                 .build();
     }
 

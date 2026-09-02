@@ -15,11 +15,17 @@ import java.util.List;
  * @author God
  * @since 2026-08-21
  */
-public interface IAiSessionService extends IService<AiSession> {
+public interface IAISessionService extends IService<AiSession> {
 
     SessionVO createSession(Integer num);
 
     List<SessionVO.Example> getHotProblem(Integer num);
 
     List<MessageVO> queryBySessionId(String sessionId);
+
+    void update(String sessionId, String title);
+
+    void updateTitle(String sessionId, String title);
+
+    void deleteHistorySession(String sessionId);
 }
