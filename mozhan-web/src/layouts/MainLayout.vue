@@ -129,6 +129,14 @@ function goChat() {
   }
   router.push({ name: 'Chat' })
 }
+
+function goAI() {
+  if (!userStore.isLoggedIn) {
+    redirectToLogin('请先登录后使用AI助手')
+    return
+  }
+  router.push({ name: 'AIChat' })
+}
 </script>
 
 <template>
@@ -148,6 +156,13 @@ function goChat() {
             @click="goDiary"
           >
             小记
+          </button>
+          <button
+            class="nav-item"
+            :class="{ active: $route.name === 'AIChat' }"
+            @click="goAI"
+          >
+            AI助手
           </button>
         </nav>
         <div class="user-area">
@@ -229,7 +244,7 @@ function goChat() {
       <router-view />
     </main>
 
-    <footer v-if="$route.name !== 'Chat'" class="footer">
+    <footer v-if="!['Chat', 'AIChat'].includes($route.name)" class="footer">
       <p>© 2026 墨栈 · 挥毫落纸，栈叙文心</p>
     </footer>
   </div>

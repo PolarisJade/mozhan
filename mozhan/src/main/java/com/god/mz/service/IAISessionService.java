@@ -2,6 +2,9 @@ package com.god.mz.service;
 
 import com.god.mz.domain.po.AiSession;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.god.mz.domain.query.cursorQuery.AISessionCursorQuery;
+import com.god.mz.domain.query.cursorQuery.CursorPageVO;
+import com.god.mz.domain.vo.ai.ChatSessionVO;
 import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
 
@@ -28,4 +31,6 @@ public interface IAISessionService extends IService<AiSession> {
     void updateTitle(String sessionId, String title);
 
     void deleteHistorySession(String sessionId);
+
+    CursorPageVO<ChatSessionVO> queryHistorySession(AISessionCursorQuery query);
 }

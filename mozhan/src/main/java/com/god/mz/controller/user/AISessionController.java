@@ -1,6 +1,9 @@
 package com.god.mz.controller.user;
 
 
+import com.god.mz.domain.query.cursorQuery.AISessionCursorQuery;
+import com.god.mz.domain.query.cursorQuery.CursorPageVO;
+import com.god.mz.domain.vo.ai.ChatSessionVO;
 import com.god.mz.domain.vo.Result;
 import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
@@ -71,5 +74,14 @@ public class AISessionController {
     public Result<Void> deleteHistorySession(@RequestParam("sessionId") String sessionId) {
         aiSessionService.deleteHistorySession(sessionId);
         return Result.success();
+    }
+
+    /**
+     * 查询历史会话列表
+     */
+    @GetMapping("/history")
+    public Result<CursorPageVO<ChatSessionVO>> queryHistorySession(AISessionCursorQuery query) {
+        CursorPageVO<ChatSessionVO> vo = aiSessionService.queryHistorySession(query);
+        return Result.success(vo);
     }
 }

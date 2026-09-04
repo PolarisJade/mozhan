@@ -8,12 +8,16 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.god.mz.common.constant.AIToolConstant;
 import com.god.mz.common.enums.BizCodeEnum;
 import com.god.mz.common.enums.MessageTypeEnum;
 import com.god.mz.config.AISessionProperties;
 import com.god.mz.domain.po.AiSession;
+import com.god.mz.domain.query.cursorQuery.AISessionCursorQuery;
+import com.god.mz.domain.query.cursorQuery.CursorPageVO;
+import com.god.mz.domain.vo.ai.ChatSessionVO;
 import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
 import com.god.mz.exception.BizException;
@@ -21,6 +25,8 @@ import com.god.mz.mapper.AiSessionMapper;
 import com.god.mz.service.AIChatService;
 import com.god.mz.service.IAISessionService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.god.mz.util.CursorCodeUtil;
+import com.god.mz.util.CursorQueryUtil;
 import com.god.mz.util.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -30,6 +36,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +56,7 @@ public class AISessionServiceImpl extends ServiceImpl<AiSessionMapper, AiSession
     private final ChatMemory chatMemory;
     private final ChatModel chatModel;
 
-    private static final String TITLE_PROMPT = ResourceUtil.readUtf8Str("prompt/title.txt");
+    private static final String TITLE_PROMPT = ResourceUtil.readUtf8Str("prompt/title-generation.txt");
 
     @Override
     public SessionVO createSession(Integer num) {
@@ -155,6 +162,41 @@ public class AISessionServiceImpl extends ServiceImpl<AiSessionMapper, AiSession
 
         String conversationId = AIChatService.getConversationId(sessionId);
         chatMemory.clear(conversationId);
+    }
+
+    @Override
+    public CursorPageVO<ChatSessionVO> queryHistorySession(AISessionCursorQuery query) {
+        Long userId = UserContext.getUserId();
+        Integer pageSize = query.getPageSize();
+        String sortBy = query.getSortBy();
+
+        QueryWrapper<AiSession> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId)
+                .isNotNull("title")
+                .ne("title", "");
+
+        CursorQueryUtil.applyCursor(queryWrapper, query, "id");
+
+        List<AiSession> sessionList = list(queryWrapper);
+
+        boolean hasMore = sessionList.size() > pageSize;
+        if (hasMore) {
+            sessionList = sessionList.subList(0, pageSize);
+        }
+        if (sessionList.isEmpty()) {
+            return new CursorPageVO<>(new ArrayList<>(), false, null);
+        }
+
+        List<ChatSessionVO> voList = sessionList.stream()
+                .map(session -> ChatSessionVO.builder()
+                        .sessionId(session.getSessionId())
+                        .title(session.getTitle())
+                        .updateTime(session.getUpdateTime())
+                        .build())
+                .toList();
+
+        List<Long> cursors = CursorQueryUtil.getNextCursor(sessionList, sortBy, "id");
+        return new CursorPageVO<>(voList, hasMore, CursorCodeUtil.encode(cursors));
     }
 
     /**
