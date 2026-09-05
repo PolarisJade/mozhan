@@ -1,6 +1,7 @@
 package com.god.mz.config;
 
 import com.alibaba.cloud.ai.memory.redis.JedisRedisChatMemoryRepository;
+import com.god.mz.common.constant.RedisConstant;
 import com.god.mz.tool.ArticleTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -30,6 +31,19 @@ public class ChatClientConfig {
     }
 
     /**
+     * 写作专用 ChatClient：
+     * 只保留日志 Advisor，不挂会话记忆、不挂文章检索工具。
+     * 写作采用方案A（前端每轮携带当前正文），后端无状态，因此无需 ChatMemory。
+     */
+    @Bean
+    public ChatClient writerChatClient(ChatClient.Builder chatClientBuilder,
+                                       Advisor loggerAdvisor) {
+        return chatClientBuilder
+                .defaultAdvisors(loggerAdvisor)
+                .build();
+    }
+
+    /**
      * 日志记录器
      */
     @Bean
@@ -44,6 +58,7 @@ public class ChatClientConfig {
                 .port(redisProperties.getPort())
                 .password(redisProperties.getPassword())
                 .database(redisProperties.getDatabase())
+                .keyPrefix(RedisConstant.CHAT_MEMORY_PREFIX)
                 .build();
     }
 

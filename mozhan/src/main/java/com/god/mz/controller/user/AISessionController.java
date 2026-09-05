@@ -1,10 +1,13 @@
 package com.god.mz.controller.user;
 
 
+import com.god.mz.domain.query.cursorQuery.AISessionCursorQuery;
+import com.god.mz.domain.query.cursorQuery.CursorPageVO;
+import com.god.mz.domain.vo.ai.ChatSessionVO;
 import com.god.mz.domain.vo.Result;
 import com.god.mz.domain.vo.ai.MessageVO;
 import com.god.mz.domain.vo.ai.SessionVO;
-import com.god.mz.service.IAiSessionService;
+import com.god.mz.service.IAISessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +26,7 @@ import java.util.List;
 @RequestMapping("/ai/session")
 public class AISessionController {
 
-    private final IAiSessionService aiSessionService;
+    private final IAISessionService aiSessionService;
 
     /**
      * 新建会话
@@ -49,7 +52,36 @@ public class AISessionController {
      * @return 对话记录列表
      */
     @GetMapping("/{sessionId}")
-    public List<MessageVO> queryBySessionId(@PathVariable("sessionId") String sessionId) {
-        return aiSessionService.queryBySessionId(sessionId);
+    public Result<List<MessageVO>> queryBySessionId(@PathVariable("sessionId") String sessionId) {
+        List<MessageVO> messages = aiSessionService.queryBySessionId(sessionId);
+        return Result.success(messages);
+    }
+
+    /**
+     * 更新历史会话标题
+     */
+    @PutMapping("/history")
+    public Result<Void> updateTitle(@RequestParam("sessionId") String sessionId,
+                            @RequestParam("title") String title) {
+        aiSessionService.updateTitle(sessionId, title);
+        return Result.success();
+    }
+
+    /**
+     * 删除历史会话列表
+     */
+    @DeleteMapping("/history")
+    public Result<Void> deleteHistorySession(@RequestParam("sessionId") String sessionId) {
+        aiSessionService.deleteHistorySession(sessionId);
+        return Result.success();
+    }
+
+    /**
+     * 查询历史会话列表
+     */
+    @GetMapping("/history")
+    public Result<CursorPageVO<ChatSessionVO>> queryHistorySession(AISessionCursorQuery query) {
+        CursorPageVO<ChatSessionVO> vo = aiSessionService.queryHistorySession(query);
+        return Result.success(vo);
     }
 }

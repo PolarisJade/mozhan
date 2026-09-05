@@ -7,6 +7,12 @@ import { createArticle, updateArticle, getArticleDetail, getArticleInfo, publish
 import { getCategoryList } from '@/api/category'
 import { getTagList, createTag } from '@/api/tag'
 import { uploadImage } from '@/api/upload'
+import {
+  generateOutline as generateOutlineApi,
+  generateMeta as generateMetaApi,
+  streamGenerateArticle,
+  streamReviseArticle,
+} from '@/api/aiWriter'
 import { useUserStore } from '@/stores/user'
 import { redirectToLogin } from '@/utils/auth'
 import formatIcon from '@/assets/edit/format.svg'
@@ -711,6 +717,135 @@ function goBack() {
   router.back()
 }
 
+// ---------- AI 辅助写作 ----------
+const aiOpen = ref(false)
+const topic = ref('')
+const requirement = ref('')
+const instruction = ref('')
+const outline = ref('')
+const generating = ref(false)
+const streamContent = ref('')
+const streamMode = ref('') // 'article' | 'revise'
+const aiAbortController = ref(null)
+
+function getEditorContent() {
+  return editorRef.value ? editorRef.value.innerHTML : ''
+}
+
+function setEditorContent(html) {
+  if (editorRef.value) editorRef.value.innerHTML = html
+}
+
+function startStream(mode, payload) {
+  generating.value = true
+  streamContent.value = ''
+  streamMode.value = mode
+  const ctl = new AbortController()
+  aiAbortController.value = ctl
+
+  const streamFn = mode === 'article' ? streamGenerateArticle : streamReviseArticle
+  streamFn(
+    payload,
+    (event) => {
+      if (event.eventType === 1001) {
+        streamContent.value += event.eventData ?? ''
+      } else if (event.eventType === 1002) {
+        generating.value = false
+        aiAbortController.value = null
+      }
+    },
+    ctl.signal,
+  )
+    .then(() => {
+      generating.value = false
+      aiAbortController.value = null
+    })
+    .catch((err) => {
+      generating.value = false
+      aiAbortController.value = null
+      if (err?.name !== 'AbortError') {
+        InkMessage.error(err?.message || '生成失败，请稍后重试')
+      }
+    })
+}
+
+async function generateOutline() {
+  if (!topic.value.trim()) {
+    InkMessage.warning('请先输入文章主题')
+    return
+  }
+  if (generating.value) return
+  try {
+    const data = await generateOutlineApi({
+      topic: topic.value.trim(),
+      requirement: requirement.value.trim(),
+    })
+    outline.value = data || ''
+  } catch (e) {
+    InkMessage.error('大纲生成失败，请稍后重试')
+  }
+}
+
+function generateArticle() {
+  if (!topic.value.trim()) {
+    InkMessage.warning('请先输入文章主题')
+    return
+  }
+  if (generating.value) return
+  startStream('article', {
+    topic: topic.value.trim(),
+    outline: outline.value.trim() || null,
+    requirement: requirement.value.trim() || null,
+  })
+}
+
+function reviseArticle() {
+  if (generating.value) return
+  const content = getEditorContent()
+  if (!content || !content.trim()) {
+    InkMessage.warning('当前正文为空')
+    return
+  }
+  if (!instruction.value.trim()) {
+    InkMessage.warning('请输入修改要求')
+    return
+  }
+  startStream('revise', {
+    currentContent: content,
+    instruction: instruction.value.trim(),
+  })
+}
+
+async function generateMeta() {
+  if (generating.value) return
+  const content = getEditorContent()
+  if (!content || !content.trim()) {
+    InkMessage.warning('当前正文为空')
+    return
+  }
+  try {
+    const data = await generateMetaApi({ content })
+    if (data?.title) form.title = data.title
+    if (data?.summary) form.summary = data.summary
+    InkMessage.success('已生成标题与摘要')
+  } catch (e) {
+    InkMessage.error('生成标题摘要失败，请稍后重试')
+  }
+}
+
+function applyContent() {
+  if (!streamContent.value) return
+  setEditorContent(streamContent.value)
+  InkMessage.success('已插入正文')
+  streamContent.value = ''
+  streamMode.value = ''
+}
+
+function stopStream() {
+  if (aiAbortController.value) aiAbortController.value.abort()
+  generating.value = false
+}
+
 onMounted(() => {
   if (!userStore.isLoggedIn) {
     redirectToLogin('请先登录后再写文章')
@@ -730,11 +865,22 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('mousedown', handleToolbarClickOutside)
+  if (aiAbortController.value) aiAbortController.value.abort()
 })
 </script>
 
 <template>
-  <div class="editor-page" v-loading="loading">
+  <button v-if="!aiOpen" class="ai-writer-toggle" @click="aiOpen = true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l1.6 4.2L18 8.8l-4.4 1.6L12 14.6l-1.6-4.2L6 8.8l4.4-1.6L12 3z"/>
+      <path d="M19 14l.7 1.8L21.5 16.5l-1.8.7L19 19l-.7-1.8L16.5 16.5l1.8-.7L19 14z"/>
+      <path d="M5 14l.7 1.8L7.5 16.5l-1.8.7L5 19l-.7-1.8L2.5 16.5l1.8-.7L5 14z"/>
+    </svg>
+    <span>AI辅助写文章</span>
+  </button>
+
+  <div class="editor-page" :class="{ 'ai-open': aiOpen }" v-loading="loading">
+    <div class="editor-main">
     <div class="editor-header">
       <h2 class="ink-page-title">{{ isEdit ? '编辑文章' : '撰写新文' }}</h2>
       <div class="header-actions">
@@ -936,6 +1082,72 @@ onUnmounted(() => {
       hidden
       @change="handleImageSelect"
     />
+    </div>
+
+    <!-- AI 辅助写作面板 -->
+    <aside v-if="aiOpen" class="ai-writer-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.6 4.2L18 8.8l-4.4 1.6L12 14.6l-1.6-4.2L6 8.8l4.4-1.6L12 3z"/>
+            <path d="M19 14l.7 1.8L21.5 16.5l-1.8.7L19 19l-.7-1.8L16.5 16.5l1.8-.7L19 14z"/>
+          </svg>
+          <span>AI 辅助写作</span>
+        </div>
+        <button class="ai-panel-close" @click="aiOpen = false" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="ai-panel-body">
+        <div class="ai-block">
+          <label class="ai-label">文章主题</label>
+          <textarea v-model="topic" class="ai-textarea" rows="2" placeholder="例如：江南的春天"></textarea>
+        </div>
+
+        <div class="ai-block">
+          <label class="ai-label">写作要求（可选）</label>
+          <textarea v-model="requirement" class="ai-textarea" rows="2" placeholder="如：语言风格、文章篇幅等"></textarea>
+        </div>
+
+        <div class="ai-btn-row">
+          <button class="ai-btn" :disabled="generating" @click="generateOutline">生成大纲</button>
+          <button class="ai-btn ai-btn-primary" :disabled="generating" @click="generateArticle">生成正文</button>
+        </div>
+
+        <div v-if="outline" class="ai-result-block">
+          <div class="ai-result-title">大纲</div>
+          <pre class="ai-outline">{{ outline }}</pre>
+        </div>
+
+        <div v-if="streamContent || generating" class="ai-result-block">
+          <div class="ai-result-title">
+            {{ streamMode === 'revise' ? '修改结果' : '生成正文' }}
+          </div>
+          <div v-if="generating" class="ai-generating">
+            <span class="loading-spinner"></span>
+            <span>正在生成...</span>
+            <button class="ai-stop" @click="stopStream">停止</button>
+          </div>
+          <div class="ai-preview" v-html="streamContent"></div>
+          <button v-if="!generating && streamContent" class="ai-btn ai-btn-primary ai-apply" @click="applyContent">
+            插入正文到编辑器
+          </button>
+        </div>
+
+        <div class="ai-block">
+          <label class="ai-label">修改要求</label>
+          <textarea v-model="instruction" class="ai-textarea" rows="2" placeholder="例如：把语气改得更轻松一些"></textarea>
+        </div>
+
+        <div class="ai-btn-row">
+          <button class="ai-btn" :disabled="generating" @click="reviseArticle">按此修改</button>
+          <button class="ai-btn" :disabled="generating" @click="generateMeta">生成标题摘要</button>
+        </div>
+      </div>
+    </aside>
   </div>
 </template>
 
@@ -943,6 +1155,282 @@ onUnmounted(() => {
 .editor-page {
   max-width: 900px;
   margin: 0 auto;
+}
+
+.editor-page.ai-open {
+  max-width: 1160px;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.editor-page.ai-open .editor-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* AI 辅助写作：右侧按钮与面板 */
+.ai-writer-toggle {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 10px;
+  background: var(--ink);
+  color: #f0ebe3;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  cursor: pointer;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.12);
+  transition: background-color 0.2s;
+}
+
+.ai-writer-toggle:hover {
+  background: var(--accent);
+}
+
+.ai-writer-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.ai-writer-toggle span {
+  writing-mode: vertical-rl;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.ai-writer-panel {
+  width: 360px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 100px;
+  max-height: calc(100vh - 132px);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper-card);
+  border: 1px solid rgba(26, 26, 26, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ai-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.08);
+  background: var(--paper);
+}
+
+.ai-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+}
+
+.ai-panel-title svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ai-panel-close {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.ai-panel-close:hover {
+  color: var(--ink);
+  background: rgba(26, 26, 26, 0.05);
+}
+
+.ai-panel-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ai-panel-body {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-label {
+  font-size: 13px;
+  color: var(--ink-light);
+  letter-spacing: 0.04em;
+}
+
+.ai-textarea {
+  padding: 8px 10px;
+  border: 1px solid rgba(26, 26, 26, 0.12);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Noto Serif SC', serif;
+  color: var(--ink);
+  resize: vertical;
+  outline: none;
+  background: rgba(255, 252, 247, 0.8);
+  transition: border-color 0.2s;
+}
+
+.ai-textarea:focus {
+  border-color: var(--ink);
+}
+
+.ai-textarea::placeholder {
+  color: var(--ink-muted);
+}
+
+.ai-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.ai-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: 'Noto Serif SC', serif;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid rgba(26, 26, 26, 0.25);
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+}
+
+.ai-btn:hover:not(:disabled) {
+  background: rgba(26, 26, 26, 0.04);
+  border-color: var(--ink);
+}
+
+.ai-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-btn-primary {
+  background: var(--ink);
+  color: #f0ebe3;
+  border-color: var(--ink);
+}
+
+.ai-btn-primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.ai-result-block {
+  border: 1px solid rgba(26, 26, 26, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  background: var(--paper);
+}
+
+.ai-result-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.ai-outline {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-light);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.ai-generating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+
+.ai-generating .loading-spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.ai-stop {
+  margin-left: auto;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--seal-red);
+  border: 1px solid var(--seal-red);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ai-stop:hover {
+  background: rgba(26, 26, 26, 0.04);
+}
+
+.ai-preview {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-light);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ai-preview :deep(p) { margin: 0 0 8px 0; }
+.ai-preview :deep(h1),
+.ai-preview :deep(h2),
+.ai-preview :deep(h3),
+.ai-preview :deep(h4) { margin: 12px 0 6px 0; color: var(--ink); font-weight: 600; }
+.ai-preview :deep(h1) { font-size: 20px; }
+.ai-preview :deep(h2) { font-size: 18px; }
+.ai-preview :deep(h3) { font-size: 16px; }
+.ai-preview :deep(h4) { font-size: 15px; }
+.ai-preview :deep(ul),
+.ai-preview :deep(ol) { margin: 8px 0; padding-left: 22px; }
+.ai-preview :deep(blockquote) { border-left: 3px solid var(--ink-light); padding-left: 12px; margin: 8px 0; color: var(--ink-muted); }
+.ai-preview :deep(code) { background: rgba(74, 74, 74, 0.08); padding: 1px 5px; border-radius: 3px; font-size: 0.9em; }
+.ai-preview :deep(pre) { background: rgba(26, 26, 26, 0.95); color: #e4e4e4; border-radius: 4px; padding: 10px 14px; overflow-x: auto; }
+.ai-preview :deep(pre code) { background: transparent; color: #e4e4e4; }
+
+.ai-apply {
+  width: 100%;
+  margin-top: 10px;
 }
 
 .editor-header {

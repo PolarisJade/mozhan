@@ -13,5 +13,6 @@ public interface RedisConstant {
     String ARTICLE_LIKE_COUNT_KEY = "mozhan:like:article:count";
     String HOT_ARTICLE_KEY = "mozhan:hot:article";
 
-    String CHAT_SESSION_GENERATE_STATUS_KEY = "ai:generate:status";
+    String CHAT_SESSION_GENERATE_STATUS_KEY = "mozhan:ai:generate:status";
+    String CHAT_MEMORY_PREFIX = "mozhan:ai:chat:memory:";
 }

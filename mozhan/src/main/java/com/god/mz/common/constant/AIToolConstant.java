@@ -14,4 +14,11 @@ public interface AIToolConstant {
         String ARTICLE_KEYWORD = "文章关键词";
         String ESSAY_KEYWORD = "随笔关键词";
     }
+
+    interface Memory {
+        /**
+         * 消息metadata中，工具结果附加参数的键名
+         */
+        String PARAMS_KEY = "params";
+    }
 }
