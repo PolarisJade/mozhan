@@ -1,5 +1,6 @@
 package com.god.mz.config;
 
+import com.god.mz.interceptor.AdminInterceptor;
 import com.god.mz.interceptor.AuthInterceptor;
 import com.god.mz.interceptor.JwtInterceptor;
 import jakarta.annotation.Resource;
@@ -19,6 +20,8 @@ public class WebConfig implements WebMvcConfigurer {
     private JwtInterceptor jwtInterceptor;
     @Resource
     private AuthInterceptor authInterceptor;
+    @Resource
+    private AdminInterceptor adminInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -40,7 +43,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/logout",
                         "/article-like/*",
                         "/user-follow/*",
-                        "/admin/*",
+                        // 必须用 /**：Spring Boot 3 的 PathPattern 里 * 只匹配一级路径，
+                        // 写成 /admin/* 时 /admin/user/page 这类两级路径根本不会被拦到。
+                        "/admin/**",
                         "/chat/*",
                         "/diary/**",
                         "/ai/**"
@@ -48,5 +53,10 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/admin/user/login"
                 );
+
+        // 注册顺序不能变：adminInterceptor 依赖 authInterceptor 先把 userId 放进 UserContext
+        registry.addInterceptor(adminInterceptor)
+                .addPathPatterns("/admin/**")
+                .excludePathPatterns("/admin/user/login");
     }
 }

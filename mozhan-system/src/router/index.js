@@ -16,7 +16,19 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/user'
+          redirect: '/dashboard'
+        },
+        {
+          path: '/dashboard',
+          name: 'AdminDashboard',
+          component: () => import('@/views/admin/AdminDashboardView.vue'),
+          meta: { title: '工作台' }
+        },
+        {
+          path: '/article',
+          name: 'AdminArticle',
+          component: () => import('@/views/admin/AdminArticleView.vue'),
+          meta: { title: '文章管理' }
         },
         {
           path: '/user',

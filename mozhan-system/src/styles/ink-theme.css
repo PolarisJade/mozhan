@@ -1,0 +1,397 @@
+/*
+ * 墨栈管理端主题。
+ *
+ * 前半段是从 mozhan-web/src/styles/ink-theme.css 移植的，改这里之前先看一眼那边，
+ * 两边共用同一套墨色才叫一个产品。后半段是管理端独有的：侧边栏材质、表格、动效 token。
+ *
+ * 必须在 main.js 里 import 在 element-plus/dist/index.css 之后——下面覆盖的是 --el-* 变量，
+ * 顺序反了会被 Element Plus 自己的 :root 盖掉，表现为"主题完全没生效"。
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+XiaoWei&display=swap');
+
+:root {
+  /* ---- 墨色与纸张 ---- */
+  --ink: #1a1a1a;
+  --ink-light: #4a4a4a;
+  --ink-muted: #8a8580;
+  --ink-faint: #b5b0a8;
+  --paper: #f6f3ed;
+  --paper-deep: #ebe6dc;
+  --paper-card: rgba(255, 252, 247, 0.95);
+  --paper-solid: #fffcf7;
+  --accent: #2c2c2c;
+  --seal-red: #8b4513;
+
+  /* ---- 间距刻度：只用这几档，避免每个页面各写各的 padding ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* ---- 层级：越"重"的材质站得越高，不叠两层半透明 ---- */
+  --z-sidebar: 100;
+  --z-header: 50;
+  --z-overlay: 2000;
+
+  /* ---- 动效 ---- */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.32, 0.64, 1);
+
+  /* ---- 半透明材质 ---- */
+  --material-blur: blur(20px) saturate(180%);
+  --material-sidebar: rgba(246, 243, 237, 0.72);
+  --material-header: rgba(255, 252, 247, 0.72);
+
+  /* ---- Element Plus 变量覆盖 ---- */
+  --el-color-primary: #1a1a1a;
+  --el-color-primary-light-3: #4a4a4a;
+  --el-color-primary-light-5: #6a6a6a;
+  --el-color-primary-light-7: #9a9a9a;
+  --el-color-primary-light-8: #b5b5b5;
+  --el-color-primary-light-9: #d8d8d8;
+  --el-color-primary-dark-2: #0d0d0d;
+  --el-border-radius-base: 2px;
+  --el-font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  --el-text-color-primary: #1a1a1a;
+  --el-text-color-regular: #4a4a4a;
+  --el-text-color-secondary: #8a8580;
+  --el-border-color: #ebe6dc;
+  --el-border-color-light: #ebe6dc;
+  --el-border-color-lighter: #f0ece4;
+  --el-fill-color-blank: #fffcf7;
+  --el-bg-color: #fffcf7;
+  --el-bg-color-overlay: #fffcf7;
+  /* 主题色改成近黑后，默认的成功/警告色仍在用饱和的 Element 绿黄，和墨色放在一起很吵，
+     统一压成"纸上的颜料"而不是"屏幕上的信号灯"。 */
+  --el-color-success: #4a7c3f;
+  --el-color-warning: #a3542a;
+  --el-color-danger: #9c3a2f;
+  --el-color-error: #9c3a2f;
+}
+
+body {
+  font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ==========================================================================
+   可复用样式类
+   ========================================================================== */
+
+.font-display {
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+}
+
+.ink-card {
+  background: var(--paper-card);
+  border: 1px solid rgba(26, 26, 26, 0.08);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(26, 26, 26, 0.06);
+}
+
+.ink-card .el-card__body {
+  padding: 20px 24px;
+}
+
+/*
+ * 中文标题的字距是正的，和拉丁文的负字距规则相反。
+ * 拉丁字母在大字号下每个字的宽度差被放大，收紧才好看；汉字是等宽方块，
+ * 收紧会让笔画互相顶到一起，拉开反而更像碑帖上的字。
+ */
+.ink-page-title {
+  margin: 0 0 var(--sp-5);
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--ink);
+  letter-spacing: 0.12em;
+  position: relative;
+  padding-bottom: var(--sp-3);
+}
+
+.ink-page-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--ink), transparent);
+}
+
+.ink-btn {
+  background: var(--ink) !important;
+  border-color: var(--ink) !important;
+  color: #f0ebe3 !important;
+  border-radius: 2px !important;
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 0.15em;
+}
+
+.ink-btn:hover,
+.ink-btn:focus {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+.ink-btn-plain {
+  background: transparent !important;
+  border: 1px solid rgba(26, 26, 26, 0.25) !important;
+  color: var(--ink) !important;
+  border-radius: 2px !important;
+}
+
+.ink-btn-plain:hover {
+  border-color: var(--ink) !important;
+  background: rgba(26, 26, 26, 0.04) !important;
+}
+
+.ink-link {
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.25);
+  padding-bottom: 1px;
+  transition: border-color var(--dur-slow);
+}
+
+.ink-link:hover {
+  border-bottom-color: var(--ink);
+}
+
+.ink-form .el-form-item__label {
+  color: var(--ink-light);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.ink-form .el-input__wrapper {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid rgba(26, 26, 26, 0.18);
+  padding-left: 0;
+  padding-right: 0;
+  transition: border-color var(--dur-slow);
+}
+
+.ink-form .el-input__wrapper:hover,
+.ink-form .el-input__wrapper.is-focus {
+  box-shadow: none;
+  border-bottom-color: var(--ink);
+}
+
+.ink-form .el-textarea__inner {
+  background: rgba(255, 252, 247, 0.6);
+  border: 1px solid rgba(26, 26, 26, 0.12);
+  border-radius: 2px;
+  font-family: 'Noto Serif SC', serif;
+}
+
+.ink-meta {
+  font-size: 13px;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+/* 筛选控件的统一宽度。放在这里而不是每个页面写一遍 scoped 样式，
+   否则六个页面的搜索框会各自漂移成 200/220/240 三种宽度。 */
+.filter-input {
+  width: 220px;
+}
+
+.filter-select {
+  width: 150px;
+}
+
+@media (max-width: 720px) {
+  .filter-input,
+  .filter-select {
+    width: 100%;
+  }
+}
+
+.ink-divider .el-divider {
+  border-color: rgba(26, 26, 26, 0.1);
+}
+
+/* ==========================================================================
+   Element Plus 组件调校
+   ========================================================================== */
+
+.el-button.is-link {
+  color: var(--ink-light);
+}
+
+.el-button.is-link:hover {
+  color: var(--ink);
+}
+
+.el-tag {
+  border-radius: 2px;
+}
+
+.el-tag.el-tag--warning {
+  --el-tag-bg-color: rgba(139, 69, 19, 0.1);
+  --el-tag-border-color: rgba(139, 69, 19, 0.3);
+  --el-tag-text-color: var(--seal-red);
+}
+
+/* 按下即反馈：不等 click 完成，手指/鼠标按下去的那一刻就动 */
+.el-button:not(.is-disabled):active {
+  transform: scale(0.97);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.el-button:not(.is-disabled) {
+  transition: background-color var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+/* 键盘用户需要看得见焦点在哪：鼠标点击不要出现（:focus-visible），键盘导航必须有 */
+.el-button:focus-visible,
+.el-input__wrapper:has(input:focus-visible),
+.el-switch:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* 表格：边框降到发丝级，表头用纸色压一层，让数据本身最重 */
+.el-table {
+  --el-table-border-color: var(--paper-deep);
+  --el-table-header-bg-color: var(--paper);
+  --el-table-row-hover-bg-color: rgba(26, 26, 26, 0.03);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+}
+
+.el-table th.el-table__cell {
+  font-weight: 600;
+  color: var(--ink-light);
+  letter-spacing: 0.06em;
+}
+
+.el-table .el-table__cell {
+  padding: 10px 0;
+}
+
+.el-table--border {
+  border-color: var(--paper-deep);
+}
+
+.el-pagination {
+  --el-pagination-button-bg-color: transparent;
+  --el-pagination-hover-color: var(--ink);
+  font-family: 'Noto Serif SC', serif;
+}
+
+.el-pagination.is-background .el-pager li.is-active {
+  background: var(--ink);
+}
+
+.el-dialog {
+  --el-dialog-border-radius: 4px;
+  background: var(--paper-solid);
+}
+
+.el-dialog__header {
+  border-bottom: 1px solid var(--paper-deep);
+  margin-right: 0;
+  padding-bottom: var(--sp-4);
+}
+
+.el-dialog__title {
+  font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.el-radio-button__inner {
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 0.06em;
+}
+
+/* 滚动条：墨色细条，不再是系统默认的灰 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 26, 0.18);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 26, 26, 0.32);
+}
+
+/* ==========================================================================
+   无障碍降级
+   ========================================================================== */
+
+/*
+ * 前庭失调的用户会因为位移/缩放类动效而眩晕。这里不是"把动画关掉"，
+ * 而是保留颜色与透明度过渡（它们不引起位移感），只去掉位移、缩放和滑动。
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .el-button:not(.is-disabled):active,
+  .el-button:not(.is-disabled):hover {
+    transform: none !important;
+  }
+
+  .nav-indicator,
+  .shell-title::after {
+    transition: none !important;
+  }
+}
+
+/*
+ * 关掉"降低透明度"偏好后不能再依赖 backdrop-filter——半透明面板会变成一团糊。
+ * 这里直接换成不透明的纸色，视觉层级靠边框和阴影继续表达。
+ */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --material-sidebar: #f6f3ed;
+    --material-header: #fffcf7;
+    --material-blur: none;
+  }
+}
+
+/* 浏览器不支持 backdrop-filter 时同理：退回不透明，别让内容透出来互相干扰 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --material-sidebar: #f6f3ed;
+    --material-header: #fffcf7;
+    --material-blur: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .nav-indicator {
+    display: none;
+  }
+}

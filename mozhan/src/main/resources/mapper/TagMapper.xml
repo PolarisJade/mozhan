@@ -35,10 +35,16 @@
             COALESCE(article_count.article_count, 0) AS articleCount,
             COALESCE(essay_count.essay_count, 0) AS essayCount
         FROM tag t
+        <!--
+          必须 join article 过滤 del_flag：只数 article_tag 关联行会把软删除的文章也算进来，
+          后台看到的「关联文章数」会大于文章管理页里真实的文章条数。
+          essay 表没有 del_flag（随笔不软删），所以 essay_count 保持原样。
+        -->
         LEFT JOIN (
-            SELECT tag_id, COUNT(*) AS article_count
-            FROM article_tag
-            GROUP BY tag_id
+            SELECT at.tag_id, COUNT(*) AS article_count
+            FROM article_tag at
+            INNER JOIN article a ON a.id = at.article_id AND a.del_flag = 0
+            GROUP BY at.tag_id
         ) article_count ON t.id = article_count.tag_id
         LEFT JOIN (
             SELECT tag_id, COUNT(*) AS essay_count

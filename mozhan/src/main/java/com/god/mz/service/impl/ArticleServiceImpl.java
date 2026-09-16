@@ -1,6 +1,7 @@
 package com.god.mz.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -14,8 +15,11 @@ import com.god.mz.common.constant.RedisConstant;
 import com.god.mz.common.enums.LikeTypeEnum;
 import com.god.mz.domain.dto.ArticleDTO;
 import com.god.mz.domain.po.*;
+import com.god.mz.domain.query.PageQuery.AdminArticlePageQuery;
 import com.god.mz.domain.query.PageQuery.ArticlePageQuery;
 import com.god.mz.domain.query.PageQuery.PageQueryVO;
+import com.god.mz.domain.vo.article.AdminArticleDetailVO;
+import com.god.mz.domain.vo.article.AdminArticleVO;
 import com.god.mz.domain.vo.article.ArticleDetailVO;
 import com.god.mz.domain.vo.article.ArticleInfoVO;
 import com.god.mz.domain.vo.article.ArticleVO;
@@ -414,6 +418,69 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleVO.setCommentCount(Math.toIntExact(commentCount));
 
         return articleVO;
+    }
+
+    @Override
+    public PageQueryVO<AdminArticleVO> listAdminArticle(AdminArticlePageQuery query) {
+        AdminArticlePageQuery q = query != null ? query : new AdminArticlePageQuery();
+        int current = q.getPageNum() != null && q.getPageNum() > 0 ? q.getPageNum() : 1;
+        int size = q.getPageSize() != null && q.getPageSize() > 0 ? q.getPageSize() : 10;
+
+        Integer statusCode = parseStatus(q.getStatus());
+        int offset = (current - 1) * size;
+
+        List<AdminArticleVO> records = articleMapper.selectAdminArticlePage(q, statusCode, offset, size);
+        Long total = articleMapper.selectAdminArticleCount(q, statusCode);
+
+        // 标签一次批量补齐：逐行查标签是最容易写出来的 N+1
+        fillTags(records);
+
+        return new PageQueryVO<>(records, total, (long) size, (long) current,
+                (long) Math.ceil((double) total / size));
+    }
+
+    private void fillTags(List<AdminArticleVO> records) {
+        if (records.isEmpty()) {
+            return;
+        }
+        List<Long> articleIds = records.stream().map(AdminArticleVO::getId).collect(Collectors.toList());
+
+        Map<Long, List<TagVO>> tagMap = tagMapper.selectTagVOByArticleIds(articleIds).stream()
+                .collect(Collectors.groupingBy(TagVO::getArticleId));
+
+        records.forEach(vo -> vo.setTags(tagMap.getOrDefault(vo.getId(), new ArrayList<>())));
+    }
+
+    /**
+     * 把前端可能传来的几种状态写法统一成数据库里的 code。
+     * <p>
+     * 列表出参是中文（@JsonValue），查询参数按枚举名解析（Enum.valueOf），两边不一致，
+     * 前端很容易把列表里的「发布」直接当筛选条件传回来。这里两种都认，避免出现
+     * "筛了却没数据、还不报错" 的情况；传了无法识别的内容则直接报错，不静默返回空列表。
+     * </p>
+     */
+    private Integer parseStatus(String status) {
+        if (StrUtil.isBlank(status)) {
+            return null;
+        }
+        for (ArticleStatusEnum e : ArticleStatusEnum.values()) {
+            if (e.name().equalsIgnoreCase(status) || e.getDesc().equals(status)) {
+                return e.getCode();
+            }
+        }
+        throw new BizException(BizCodeEnum.DATA_ERROR.getCode(), "无法识别的文章状态：" + status);
+    }
+
+    @Override
+    public AdminArticleDetailVO getAdminArticleDetail(Long id) {
+        if (id == null) {
+            throw new BizException(BizCodeEnum.DATA_ERROR);
+        }
+        AdminArticleDetailVO vo = articleMapper.selectAdminArticleDetail(id);
+        if (vo == null) {
+            throw new BizException(BizCodeEnum.ARTICLE_NOT_EXIST);
+        }
+        return vo;
     }
 
     private void addOrderBy(QueryWrapper<Article> wrapper, String sortBy, Boolean isAsc) {

@@ -3,8 +3,11 @@ package com.god.mz.service;
 import com.god.mz.domain.dto.ArticleDTO;
 import com.god.mz.domain.po.Article;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.god.mz.domain.query.PageQuery.AdminArticlePageQuery;
 import com.god.mz.domain.query.PageQuery.ArticlePageQuery;
 import com.god.mz.domain.query.PageQuery.PageQueryVO;
+import com.god.mz.domain.vo.article.AdminArticleDetailVO;
+import com.god.mz.domain.vo.article.AdminArticleVO;
 import com.god.mz.domain.vo.article.ArticleDetailVO;
 import com.god.mz.domain.vo.article.ArticleInfoVO;
 import com.god.mz.domain.vo.article.ArticleVO;
@@ -46,4 +49,14 @@ public interface IArticleService extends IService<Article> {
     void updateLikeCount(int maxSize);
 
     List<ArticleInfo> queryArticleByName(String keyword);
+
+    /**
+     * 后台：文章分页（含作者/分类/标签/点赞数/评论数），支持关键词、分类、标签、状态筛选。
+     */
+    PageQueryVO<AdminArticleVO> listAdminArticle(AdminArticlePageQuery query);
+
+    /**
+     * 后台：查看单篇文章内容
+     */
+    AdminArticleDetailVO getAdminArticleDetail(Long id);
 }

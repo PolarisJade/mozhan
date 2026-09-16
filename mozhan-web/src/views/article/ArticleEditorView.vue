@@ -1,6 +1,7 @@
 <script setup>
-import { onMounted, onUnmounted, ref, reactive, watch, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { marked } from 'marked'
 import { InkMessage } from '@/utils/message'
 import 'vditor/dist/index.css'
 import { createArticle, updateArticle, getArticleDetail, getArticleInfo, publishArticle } from '@/api/article'
@@ -23,6 +24,10 @@ import codeIcon from '@/assets/edit/code.svg'
 import listIcon from '@/assets/edit/list.svg'
 import alignIcon from '@/assets/edit/align.svg'
 import photoIcon from '@/assets/edit/photo.svg'
+
+// 大纲接口返回的是 Markdown（后端 prompt/writer-outline.txt 明确要求"不要输出 HTML"），
+// 这里的解析配置与聊天页保持一致。
+marked.setOptions({ breaks: true, gfm: true })
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -723,6 +728,8 @@ const topic = ref('')
 const requirement = ref('')
 const instruction = ref('')
 const outline = ref('')
+// 大纲是 Markdown，渲染前先转成 HTML；正文（streamContent）后端直接给 HTML，不走这里。
+const outlineHtml = computed(() => marked.parse(outline.value || ''))
 const generating = ref(false)
 const streamContent = ref('')
 const streamMode = ref('') // 'article' | 'revise'
@@ -1119,7 +1126,7 @@ onUnmounted(() => {
 
         <div v-if="outline" class="ai-result-block">
           <div class="ai-result-title">大纲</div>
-          <pre class="ai-outline">{{ outline }}</pre>
+          <div class="ai-outline" v-html="outlineHtml"></div>
         </div>
 
         <div v-if="streamContent || generating" class="ai-result-block">
@@ -1366,13 +1373,31 @@ onUnmounted(() => {
 
 .ai-outline {
   margin: 0;
-  white-space: pre-wrap;
   word-break: break-word;
   font-size: 13px;
   line-height: 1.7;
   color: var(--ink-light);
   font-family: 'Noto Serif SC', serif;
 }
+
+.ai-outline :deep(p) { margin: 0 0 8px 0; }
+.ai-outline :deep(p:last-child) { margin-bottom: 0; }
+.ai-outline :deep(h1),
+.ai-outline :deep(h2),
+.ai-outline :deep(h3),
+.ai-outline :deep(h4) { margin: 12px 0 6px 0; color: var(--ink); font-weight: 600; }
+.ai-outline :deep(h1) { font-size: 18px; }
+.ai-outline :deep(h2) { font-size: 16px; }
+.ai-outline :deep(h3) { font-size: 14px; }
+.ai-outline :deep(h4) { font-size: 13.5px; }
+.ai-outline :deep(ul),
+.ai-outline :deep(ol) { margin: 6px 0; padding-left: 20px; }
+.ai-outline :deep(li) { margin: 3px 0; }
+.ai-outline :deep(strong) { color: var(--ink); font-weight: 600; }
+.ai-outline :deep(blockquote) { border-left: 3px solid var(--ink-light); padding-left: 12px; margin: 8px 0; color: var(--ink-muted); }
+.ai-outline :deep(code) { background: rgba(74, 74, 74, 0.08); padding: 1px 5px; border-radius: 3px; font-size: 0.9em; }
+.ai-outline :deep(pre) { background: rgba(26, 26, 26, 0.95); color: #e4e4e4; border-radius: 4px; padding: 10px 14px; overflow-x: auto; }
+.ai-outline :deep(pre code) { background: transparent; color: #e4e4e4; }
 
 .ai-generating {
   display: flex;

@@ -12,6 +12,7 @@ import com.god.mz.domain.po.Comment;
 import com.god.mz.domain.po.User;
 import com.god.mz.domain.query.PageQuery.CommentPageQuery;
 import com.god.mz.domain.query.PageQuery.PageQueryVO;
+import com.god.mz.domain.vo.comment.AdminCommentVO;
 import com.god.mz.domain.vo.comment.CommentVO;
 import com.god.mz.domain.vo.comment.MyCommentVO;
 import com.god.mz.exception.BizException;
@@ -333,6 +334,130 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         return result;
     }
 
+
+    @Override
+    public PageQueryVO<AdminCommentVO> queryAdminCommentPage(Integer pageNum, Integer pageSize, Long articleId,
+            Long userId) {
+        // 1. 先分页拿一级评论。parent_id = 0 是一级，其余指向所属一级评论的 id（只有两层）。
+        Page<Comment> page = new Page<>(pageNum != null ? pageNum : 1, pageSize != null ? pageSize : 10);
+
+        LambdaQueryWrapper<Comment> wrapper = Wrappers.lambdaQuery(Comment.class)
+                .eq(Comment::getParentId, 0)
+                .eq(Comment::getDelFlag, false);
+        if (articleId != null) {
+            wrapper.eq(Comment::getArticleId, articleId);
+        }
+        if (userId != null) {
+            wrapper.eq(Comment::getUserId, userId);
+        }
+        wrapper.orderByDesc(Comment::getCreateTime);
+
+        IPage<Comment> result = page(page, wrapper);
+        List<Comment> parents = result.getRecords();
+        if (parents.isEmpty()) {
+            return emptyPageVO();
+        }
+
+        // 2. 一次查出本页所有回复再分组，避免逐条一级评论去查子节点
+        List<Long> parentIds = parents.stream().map(Comment::getId).collect(Collectors.toList());
+        Map<Long, List<Comment>> repliesMap = list(Wrappers.lambdaQuery(Comment.class)
+                .in(Comment::getParentId, parentIds)
+                .eq(Comment::getDelFlag, false)
+                .orderByAsc(Comment::getCreateTime))
+                .stream()
+                .collect(Collectors.groupingBy(Comment::getParentId));
+
+        List<Comment> allComments = new ArrayList<>(parents);
+        repliesMap.values().forEach(allComments::addAll);
+
+        // 3. 用户昵称一次批量取
+        Set<Long> userIds = allComments.stream().map(Comment::getUserId).collect(Collectors.toSet());
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Collections.emptyMap()
+                : userMapper.selectByIds(userIds).stream().collect(Collectors.toMap(User::getId, u -> u));
+
+        // 4. 文章标题一次批量取，不要每行查一次
+        Set<Long> articleIds = allComments.stream()
+                .map(Comment::getArticleId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, String> articleTitleMap = articleIds.isEmpty()
+                ? Collections.emptyMap()
+                : articleMapper.selectByIds(articleIds).stream()
+                        .collect(Collectors.toMap(Article::getId, Article::getTitle));
+
+        // 5. 回复的 reply_to_id 指向某条评论，被回复人的昵称靠这张 id -> userId 表定位。
+        //    绝大多数目标都在上面的 allComments 里，只有被回复的评论已软删时才会落空。
+        Map<Long, Long> commentAuthorMap = allComments.stream()
+                .collect(Collectors.toMap(Comment::getId, Comment::getUserId));
+
+        Set<Long> missingReplyToIds = allComments.stream()
+                .filter(c -> c.getParentId() != null && c.getParentId() > 0)
+                .map(c -> c.getReplyToId() != null && c.getReplyToId() > 0 ? c.getReplyToId() : c.getParentId())
+                .filter(id -> !commentAuthorMap.containsKey(id))
+                .collect(Collectors.toSet());
+
+        // 已经软删的评论要显示「评论已删除」而不是空白，这需要知道它到底是不存在还是被删了，
+        // 所以这里再补一次批量查询（仍然是一次，不是逐行）
+        Set<Long> deletedCommentIds = missingReplyToIds.isEmpty()
+                ? Collections.emptySet()
+                : baseMapper.selectByIds(missingReplyToIds).stream()
+                        .map(Comment::getId)
+                        .collect(Collectors.toSet());
+
+        List<AdminCommentVO> voList = parents.stream().map(parent -> {
+            AdminCommentVO parentVO = buildAdminCommentVO(parent, userMap, articleTitleMap, commentAuthorMap,
+                    deletedCommentIds);
+
+            List<AdminCommentVO> replyVOs = repliesMap.getOrDefault(parent.getId(), new ArrayList<>())
+                    .stream()
+                    .map(reply -> buildAdminCommentVO(reply, userMap, articleTitleMap, commentAuthorMap,
+                            deletedCommentIds))
+                    .collect(Collectors.toList());
+
+            parentVO.setReplies(replyVOs);
+            parentVO.setTotalReplies(replyVOs.size());
+            return parentVO;
+        }).collect(Collectors.toList());
+
+        return toPageVO(result, voList);
+    }
+
+    private AdminCommentVO buildAdminCommentVO(Comment comment, Map<Long, User> userMap,
+            Map<Long, String> articleTitleMap, Map<Long, Long> commentAuthorMap, Set<Long> deletedCommentIds) {
+        AdminCommentVO vo = new AdminCommentVO();
+        vo.setId(comment.getId());
+        vo.setParentId(comment.getParentId());
+        vo.setReplyToId(comment.getReplyToId());
+        vo.setUserId(comment.getUserId());
+        vo.setContent(comment.getContent());
+        vo.setArticleId(comment.getArticleId());
+        vo.setArticleTitle(articleTitleMap.get(comment.getArticleId()));
+        vo.setDelFlag(comment.getDelFlag());
+        vo.setCreateTime(comment.getCreateTime());
+        vo.setReplies(new ArrayList<>());
+
+        User user = userMap.get(comment.getUserId());
+        vo.setNickname(user != null ? user.getNickname() : "未知用户");
+        vo.setAvatar(user != null ? user.getAvatar() : "");
+
+        // 只有回复需要解析「回复了谁」；一级评论没有这个语义
+        if (comment.getParentId() != null && comment.getParentId() > 0) {
+            Long replyToId = comment.getReplyToId() != null && comment.getReplyToId() > 0
+                    ? comment.getReplyToId()
+                    : comment.getParentId();
+            Long targetUserId = commentAuthorMap.get(replyToId);
+            User target = targetUserId != null ? userMap.get(targetUserId) : null;
+            if (target != null) {
+                vo.setReplyToNickname(target.getNickname());
+            } else if (deletedCommentIds.contains(replyToId)) {
+                // 和前台评论区保持一致，别让后台看到一片空白还得去猜
+                vo.setReplyToNickname("评论已删除");
+            }
+        }
+
+        return vo;
+    }
 
     private CommentVO buildCommentVO(Comment comment, User user, Long authorId) {
         CommentVO vo = new CommentVO();

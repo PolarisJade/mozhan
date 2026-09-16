@@ -1,9 +1,8 @@
 package com.god.mz.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +12,7 @@ import com.god.mz.domain.dto.CategoryDTO;
 import com.god.mz.domain.po.Article;
 import com.god.mz.domain.po.Category;
 import com.god.mz.domain.query.PageQuery.PageQueryVO;
+import com.god.mz.domain.vo.category.AdminCategoryVO;
 import com.god.mz.domain.vo.category.CategoryItemVO;
 import com.god.mz.exception.BizException;
 import com.god.mz.mapper.ArticleMapper;
@@ -121,27 +121,26 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public PageQueryVO<CategoryItemVO> queryCategoryPage(Integer pageNum, Integer pageSize, String sortBy, Boolean isAsc) {
-        Page<Category> page = new Page<>(pageNum, pageSize);
+    public PageQueryVO<AdminCategoryVO> queryCategoryPage(Integer pageNum, Integer pageSize, String name,
+            String sortBy, Boolean isAsc) {
+        // 关联文章数必须靠 SQL 聚合，MyBatis-Plus 的 Wrapper 表达不了，所以走自定义 XML。
+        // 代价是分页也要自己算 offset（同 TagServiceImpl 的写法）。
+        int current = pageNum != null ? pageNum : 1;
+        int size = pageSize != null ? pageSize : 10;
+        String orderBy = StrUtil.isBlank(sortBy) ? "sort" : sortBy;
+        Boolean asc = isAsc != null ? isAsc : Boolean.TRUE;
+        String keyword = StrUtil.isBlank(name) ? null : name;
 
-        LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
+        List<AdminCategoryVO> voList = baseMapper.selectAdminCategoryPage(
+                keyword, orderBy, asc, (current - 1) * size, size);
+        Long total = baseMapper.selectAdminCategoryCount(keyword);
 
-        if ("sort".equals(sortBy)) {
-            queryWrapper.orderBy(true, isAsc, Category::getSort);
-        } else {
-            queryWrapper.orderBy(true, isAsc, Category::getId);
-        }
-
-        IPage<Category> categoryPage = page(page, queryWrapper);
-
-        List<CategoryItemVO> voList = BeanUtil.copyToList(categoryPage.getRecords(), CategoryItemVO.class);
-
-        PageQueryVO<CategoryItemVO> result = new PageQueryVO<>();
+        PageQueryVO<AdminCategoryVO> result = new PageQueryVO<>();
         result.setRecords(voList);
-        result.setTotal(categoryPage.getTotal());
-        result.setPageSize(categoryPage.getSize());
-        result.setPageNo(categoryPage.getCurrent());
-        result.setPages(categoryPage.getPages());
+        result.setTotal(total);
+        result.setPageSize((long) size);
+        result.setPageNo((long) current);
+        result.setPages((long) Math.ceil((double) total / size));
 
         return result;
     }
