@@ -13,6 +13,7 @@ import com.god.mz.common.enums.UserTypeEnum;
 import com.god.mz.domain.dto.UserLoginDTO;
 import com.god.mz.domain.dto.UserPwdDTO;
 import com.god.mz.domain.dto.UserUpdateDTO;
+import com.god.mz.domain.dto.admin.AdminUserUpdateDTO;
 import com.god.mz.domain.po.Article;
 import com.god.mz.domain.po.User;
 import com.god.mz.domain.po.UserFollow;
@@ -260,9 +261,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         List<AdminUserVO> records = result.getRecords().stream().map(user -> {
             AdminUserVO vo = new AdminUserVO();
             vo.setId(user.getId());
+            vo.setUsername(user.getUsername());
             vo.setNickname(user.getNickname());
+            vo.setEmail(user.getEmail());
             vo.setAvatar(user.getAvatar());
+            vo.setIntro(user.getIntro());
             vo.setStatus(user.getStatus());
+            vo.setAdmin(user.getAdmin() == UserTypeEnum.ENABLE);
             vo.setCreateTime(user.getCreateTime());
             vo.setArticleCount(articleCountMap.getOrDefault(user.getId(), 0L));
             vo.setEssayCount(essayCountMap.getOrDefault(user.getId(), 0L));
@@ -271,6 +276,92 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         // 6. 返回分页结果
         return new PageQueryVO<>(records, result.getTotal(), result.getSize(), result.getCurrent(), result.getPages());
+    }
+
+    @Override
+    public AdminUserVO getUserDetail(Long userId) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BizException(BizCodeEnum.USER_NOT_FOUND);
+        }
+
+        AdminUserVO vo = new AdminUserVO();
+        vo.setId(user.getId());
+        vo.setUsername(user.getUsername());
+        vo.setNickname(user.getNickname());
+        vo.setEmail(user.getEmail());
+        vo.setAvatar(user.getAvatar());
+        vo.setIntro(user.getIntro());
+        vo.setStatus(user.getStatus());
+        vo.setAdmin(user.getAdmin() == UserTypeEnum.ENABLE);
+        vo.setCreateTime(user.getCreateTime());
+        // 单用户也走同一套批量统计接口，避免为一个用户再写一份 count 查询
+        vo.setArticleCount(singleUserCount(articleMapper.selectUserArticleCounts(List.of(userId)), userId));
+        vo.setEssayCount(singleUserCount(essayMapper.selectUserEssayCounts(List.of(userId)), userId));
+        return vo;
+    }
+
+    private Long singleUserCount(List<Map<String, Object>> counts, Long userId) {
+        return counts.stream()
+                .filter(m -> ((Number) m.get("authorId")).longValue() == userId)
+                .map(m -> ((Number) m.get("total")).longValue())
+                .findFirst()
+                .orElse(0L);
+    }
+
+    @Override
+    public void updateUserByAdmin(AdminUserUpdateDTO dto) {
+        if (dto.getId() == null) {
+            throw new BizException(BizCodeEnum.DATA_ERROR);
+        }
+        User exist = getById(dto.getId());
+        if (exist == null) {
+            throw new BizException(BizCodeEnum.USER_NOT_FOUND);
+        }
+
+        // 邮箱唯一性：只有真正换了一个邮箱才需要校验，否则用户改昵称时会误判自己占用
+        if (StrUtil.isNotBlank(dto.getEmail()) && !dto.getEmail().equals(exist.getEmail())) {
+            Long sameEmail = lambdaQuery()
+                    .eq(User::getEmail, dto.getEmail())
+                    .ne(User::getId, dto.getId())
+                    .count();
+            if (sameEmail > 0) {
+                throw new BizException(BizCodeEnum.EMAIL_HAS_USED);
+            }
+        }
+
+        // 只回写允许后台修改的字段。刻意不碰 password/status/admin，
+        // 避免一次「编辑资料」意外提权或改掉别人的密码。
+        User update = new User();
+        update.setId(dto.getId());
+        update.setNickname(dto.getNickname());
+        update.setEmail(dto.getEmail());
+        update.setAvatar(dto.getAvatar());
+        update.setIntro(dto.getIntro());
+        updateById(update);
+    }
+
+    @Override
+    public void changeUserStatus(Long userId, UserStatusEnum status) {
+        if (userId == null || status == null) {
+            throw new BizException(BizCodeEnum.DATA_ERROR);
+        }
+        User exist = getById(userId);
+        if (exist == null) {
+            throw new BizException(BizCodeEnum.USER_NOT_FOUND);
+        }
+
+        // 管理员账号一律不可禁用，不只是自己。能走到这里的调用方都是管理员，
+        // 所以这条已经覆盖了「不能禁用自己」；反过来，禁用别的管理员同样是灾难——
+        // 若被禁的是最后一个管理员，后台就再也进不去了，而现有的接口里没有任何一条能把它改回来。
+        if (status == UserStatusEnum.DISABLE && exist.getAdmin() == UserTypeEnum.ENABLE) {
+            throw new BizException(BizCodeEnum.DATA_ERROR.getCode(), "不能禁用管理员账号");
+        }
+
+        User update = new User();
+        update.setId(userId);
+        update.setStatus(status);
+        updateById(update);
     }
 
     /**

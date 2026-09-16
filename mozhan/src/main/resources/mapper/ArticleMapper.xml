@@ -76,4 +76,93 @@
         </foreach>
         GROUP BY author_id
     </select>
+
+    <!--
+      列表和 count 共用同一段 where，避免两处条件漂移导致「总数和列表对不上」这种最难查的分页 bug。
+      statusCode 由 Service 把 PUBLISHED / 发布 等写法统一解析成 1 / 0 再传进来。
+    -->
+    <sql id="adminArticleWhere">
+        a.del_flag = 0
+        <if test="q.keyword != null and q.keyword != ''">
+            AND a.title LIKE CONCAT('%', #{q.keyword}, '%')
+        </if>
+        <if test="q.categoryId != null">
+            AND a.category_id = #{q.categoryId}
+        </if>
+        <if test="q.tagId != null">
+            <!--
+              用 EXISTS 而不是 JOIN article_tag：一篇文章挂多个标签时 JOIN 会把行数放大，
+              分页总数跟着虚高，还会出现同一篇文章在列表里重复出现。
+            -->
+            AND EXISTS (
+                SELECT 1 FROM article_tag at
+                WHERE at.article_id = a.id AND at.tag_id = #{q.tagId}
+            )
+        </if>
+        <if test="statusCode != null">
+            AND a.status = #{statusCode}
+        </if>
+    </sql>
+
+    <select id="selectAdminArticlePage" resultType="com.god.mz.domain.vo.article.AdminArticleVO">
+        SELECT
+            a.id,
+            a.title,
+            a.summary,
+            a.author_id AS authorId,
+            a.category_id AS categoryId,
+            a.status,
+            a.like_count AS likeCount,
+            a.create_time AS createTime,
+            a.update_time AS updateTime,
+            c.name AS categoryName,
+            u.nickname AS authorName,
+            COALESCE(comment_stats.comment_count, 0) AS commentCount
+        FROM article a
+        LEFT JOIN category c ON a.category_id = c.id
+        LEFT JOIN users u ON a.author_id = u.id
+        LEFT JOIN (
+            <!-- 带上 del_flag 过滤，保证这里的评论数和评论管理页看到的一致 -->
+            SELECT article_id, COUNT(*) AS comment_count
+            FROM comment
+            WHERE del_flag = 0
+            GROUP BY article_id
+        ) comment_stats ON a.id = comment_stats.article_id
+        WHERE <include refid="adminArticleWhere"/>
+        ORDER BY a.create_time DESC, a.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectAdminArticleCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM article a
+        WHERE <include refid="adminArticleWhere"/>
+    </select>
+
+    <select id="selectAdminArticleDetail" resultType="com.god.mz.domain.vo.article.AdminArticleDetailVO">
+        SELECT
+            a.id,
+            a.title,
+            a.summary,
+            a.content,
+            a.author_id AS authorId,
+            a.category_id AS categoryId,
+            a.status,
+            a.like_count AS likeCount,
+            a.create_time AS createTime,
+            a.update_time AS updateTime,
+            c.name AS categoryName,
+            u.nickname AS authorName,
+            COALESCE(comment_stats.comment_count, 0) AS commentCount
+        FROM article a
+        LEFT JOIN category c ON a.category_id = c.id
+        LEFT JOIN users u ON a.author_id = u.id
+        LEFT JOIN (
+            SELECT article_id, COUNT(*) AS comment_count
+            FROM comment
+            WHERE del_flag = 0
+            GROUP BY article_id
+        ) comment_stats ON a.id = comment_stats.article_id
+        WHERE a.id = #{id} AND a.del_flag = 0
+    </select>
 </mapper>

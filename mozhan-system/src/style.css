@@ -1,35 +1,33 @@
+/*
+ * 基础重置。这个文件一直存在但从来没被 import 过，等于浏览器默认的 body margin(8px)
+ * 一直在生效——布局能看，但边缘那圈空隙和随之而来的滚动条都是它造成的。
+ * 现在在 main.js 里补上，顺序是 element-plus → 本文件 → ink-theme.css，
+ * 主题放在最后才能盖住这里的基础色。
+ */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 14px;
-  color: #333;
-  background: #f5f5f5;
+  /* 兜底字体族，真正的字族由 ink-theme.css 接管 */
+  font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  background: #f6f3ed;
+  color: #1a1a1a;
 }
 
 #app {
   height: 100%;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+/* 汉字之间不需要额外的字距，但标点和数字混排时行高要够 */
+body {
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

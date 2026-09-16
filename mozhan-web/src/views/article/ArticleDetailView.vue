@@ -171,6 +171,14 @@ function showFollowButton() {
   return article.value?.isFollowed !== null
 }
 
+function goBack() {
+  if (window.history.state?.back) {
+    router.back()
+  } else {
+    router.push({ name: 'Home' })
+  }
+}
+
 function goToAuthorProfile() {
   if (article.value?.authorId) {
     router.push(`/user/${article.value.authorId}`)
@@ -326,6 +334,13 @@ watch(articleContent, () => {
 
 <template>
   <div class="detail">
+    <button class="back-btn" type="button" @click="goBack">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      返回
+    </button>
+
     <el-skeleton v-if="loading" :rows="8" animated />
 
     <div v-else-if="article" class="detail-layout">
@@ -538,6 +553,28 @@ watch(articleContent, () => {
 </template>
 
 <style scoped>
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 16px;
+  font-size: 14px;
+  color: var(--ink-light);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.back-btn:hover {
+  color: var(--ink);
+}
+
+.back-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 .detail-card {
   padding: 32px 36px;
 }

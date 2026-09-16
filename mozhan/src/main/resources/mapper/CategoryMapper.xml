@@ -2,4 +2,55 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.god.mz.mapper.CategoryMapper">
 
+    <!--
+      文章数走预聚合子查询而不是 LEFT JOIN + GROUP BY：
+      直接 join 的话，分页 LIMIT 会被聚合打乱，得先算出全量再截断，成本高且容易写错。
+      子查询里必须带 a.del_flag = 0，否则软删除的文章会被继续计入（TagMapper 那边就漏了这个过滤）。
+    -->
+    <select id="selectAdminCategoryPage" resultType="com.god.mz.domain.vo.category.AdminCategoryVO">
+        SELECT
+            c.id,
+            c.name,
+            c.sort,
+            c.create_time,
+            COALESCE(article_count.article_count, 0) AS articleCount
+        FROM category c
+        LEFT JOIN (
+            SELECT a.category_id, COUNT(*) AS article_count
+            FROM article a
+            WHERE a.del_flag = 0 AND a.category_id IS NOT NULL
+            GROUP BY a.category_id
+        ) article_count ON c.id = article_count.category_id
+        <where>
+            <if test="name != null and name != ''">
+                AND c.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        <!--
+          排序列用 <choose> 白名单，绝不把 #{sortBy} 直接拼进 ORDER BY：
+          那是一个拼接点，白名单是这里唯一安全的写法。
+        -->
+        <choose>
+            <when test="sortBy == 'id'">
+                ORDER BY c.id <if test="isAsc == false">DESC</if>
+            </when>
+            <when test="sortBy == 'articleCount'">
+                ORDER BY articleCount <if test="isAsc == false">DESC</if>
+            </when>
+            <otherwise>
+                ORDER BY c.sort <if test="isAsc == false">DESC</if>
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="selectAdminCategoryCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM category c
+        <where>
+            <if test="name != null and name != ''">
+                AND c.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
 </mapper>
