@@ -58,7 +58,8 @@ mybatis-plus:
   type-aliases-package: com.god.mz.domain.po
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 可选，用于查看 SQL 日志
+    #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 可选，用于查看 SQL 日志
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl # 禁用日志
     default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     enableSqlRunner: true
@@ -76,5 +77,9 @@ mozhan:
       describe: 你的个人AI助手
       examples:
         - title: 文章推荐
-          describe: 获取文章推荐
+          describe: 文章智能推荐
+        - title: 文章查找
+          describe: 智能搜索文章
+        - title: 问题解答
+          describe: 智能回答问题
 

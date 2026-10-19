@@ -25,11 +25,15 @@
       统计区间：{{ overview.startDate }} 至 {{ overview.endDate }}
     </p>
 
+    <!--
+      这三个数是全站累计，不随上面的区间变化——和后端 AdminStatisticVO 的口径一致。
+      所以脚注写「全站累计」而不是「区间内新增」：不写清楚，读者会以为改区间没生效。
+    -->
     <div class="kpi-row">
       <div v-for="tile in tiles" :key="tile.key" class="kpi-tile">
         <div class="kpi-label">{{ tile.label }}</div>
         <div class="kpi-value">{{ overview ? overview[tile.key] : '—' }}</div>
-        <div class="kpi-foot">区间内新增</div>
+        <div class="kpi-foot">全站累计</div>
       </div>
     </div>
 
@@ -45,8 +49,8 @@
       <div v-else-if="!showTable" class="empty-hint">该区间没有数据</div>
 
       <!--
-        表格视图不只是"另一种展示"：绿柱在纸色上对比度低于 3:1，
-        校验规则要求必须给出可见数值或表格兜底，不能只靠颜色。
+        表格视图不只是"另一种展示"：折线只给形状，具体到某天的数值要靠准星 tooltip 才拿得到，
+        而 tooltip 是要悬停的。表格让每个数都能被读到、被选中复制，也不依赖颜色和指针。
       -->
       <el-table v-else :data="trend" size="small" max-height="360">
         <el-table-column prop="date" label="日期" width="140" />
@@ -54,21 +58,6 @@
         <el-table-column prop="articleCount" label="新增文章" />
         <el-table-column prop="essayCount" label="新增随笔" />
       </el-table>
-    </div>
-
-    <div v-if="overview" class="total-row">
-      <div class="total-item">
-        <span class="total-label">累计用户</span>
-        <span class="total-value">{{ overview.totalUserCount }}</span>
-      </div>
-      <div class="total-item">
-        <span class="total-label">累计文章</span>
-        <span class="total-value">{{ overview.totalArticleCount }}</span>
-      </div>
-      <div class="total-item">
-        <span class="total-label">累计随笔</span>
-        <span class="total-value">{{ overview.totalEssayCount }}</span>
-      </div>
     </div>
   </PageShell>
 </template>
@@ -87,9 +76,9 @@ const loading = ref(false)
 const showTable = ref(false)
 
 const tiles = [
-  { key: 'newUserCount', label: '新增用户' },
-  { key: 'newArticleCount', label: '新增文章' },
-  { key: 'newEssayCount', label: '新增随笔' }
+  { key: 'totalUserCount', label: '用户总数' },
+  { key: 'totalArticleCount', label: '文章总数' },
+  { key: 'totalEssayCount', label: '随笔总数' }
 ]
 
 const trend = computed(() => overview.value?.dailyTrend || [])
@@ -229,31 +218,6 @@ fetchData()
   text-align: center;
   color: var(--ink-faint, #b5b0a8);
   font-size: 13px;
-}
-
-.total-row {
-  display: flex;
-  gap: 32px;
-  padding-top: 4px;
-  flex-wrap: wrap;
-}
-
-.total-item {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.total-label {
-  font-size: 13px;
-  color: var(--ink-muted, #8a8580);
-}
-
-.total-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ink, #1a1a1a);
-  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 720px) {
